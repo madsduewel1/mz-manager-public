@@ -61,7 +61,10 @@ cd "$PROJECT_PATH"
 
 # 6. Backend Setup
 echo -e "${GREEN}🔧 Richte Backend ein...${NC}"
-cd backend
+cd "$PROJECT_PATH/backend"
+
+# Berechtigungen fixen
+sudo chown -R $USER:$USER .
 npm install --production
 
 # .env erstellen
@@ -81,8 +84,15 @@ sudo mysql mz_manager < database/schema.sql
 
 # 7. Frontend Setup und Build
 echo -e "${GREEN}🎨 Baue Frontend...${NC}"
-cd ../frontend
+cd "$PROJECT_PATH/frontend"
+
+# Berechtigungen fixen, falls npm als root gelaufen ist
+sudo chown -R $USER:$USER .
 npm install
+
+# Sicherstellen, dass vite ausführbar ist
+chmod +x node_modules/.bin/vite || true
+
 npm run build
 
 # 8. PM2 Installation und Start
