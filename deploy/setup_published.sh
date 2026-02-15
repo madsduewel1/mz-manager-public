@@ -30,9 +30,14 @@ echo -e "${GREEN}📦 Aktualisiere System-Pakete...${NC}"
 sudo apt update && sudo apt upgrade -y
 
 # 3. Installation von Abhängigkeiten
-echo -e "${GREEN}📦 Installiere Node.js, Nginx, MySQL und Certbot...${NC}"
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt install -y nodejs nginx mysql-server certbot python3-certbot-nginx git curl
+echo -e "${GREEN}📦 Installiere Node.js, Nginx, MySQL und Tools...${NC}"
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+sudo apt update
+sudo apt install -y nodejs build-essential nginx mysql-server certbot python3-certbot-nginx git
 
 # 4. MySQL absichern und Datenbank einrichten
 echo -e "${GREEN}💾 Richte MySQL-Datenbank ein...${NC}"
