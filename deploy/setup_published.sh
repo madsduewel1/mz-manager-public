@@ -23,8 +23,8 @@ read -p "MySQL Root Passwort (wird zur Installation benötigt): " DB_ROOT_PASS
 read -p "Gewünschtes MySQL Passwort für 'mz_user': " DB_USER_PASS
 read -p "Nutzt du einen externen Reverse Proxy (SSL wird extern verwaltet)? (y/n): " USE_PROXY
 
-PROJECT_PATH=$(pwd)
-echo -e "${YELLOW}Projektpfad erkannt: ${PROJECT_PATH}${NC}"
+PROJECT_PATH="/var/www/mz-manager"
+echo -e "${YELLOW}Ziel-Projektpfad: ${PROJECT_PATH}${NC}"
 
 # 2. System-Updates
 echo -e "${GREEN}📦 Aktualisiere System-Pakete...${NC}"
