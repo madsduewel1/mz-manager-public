@@ -34,6 +34,15 @@ npm install --production
 echo -e "${GREEN}💾 Aktualisiere Datenbank-Schema...${NC}"
 # Wir nutzen die Zugangsdaten aus der .env
 export $(grep -v '^#' .env | xargs)
+
+# 1. Bestehende Rollen 'Mediencoach', 'Lehrer', 'Schüler' löschbar machen
+sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "UPDATE roles SET is_system = FALSE WHERE name IN ('Mediencoach', 'Lehrer', 'Schüler');"
+
+# 2. Fehlende Spalten in 'users' sicher ergänzen (falls sie fehlen)
+sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;" 2>/dev/null || true
+sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS requires_password_change BOOLEAN DEFAULT FALSE;" 2>/dev/null || true
+
+# 3. Schema-Struktur sicherstellen (CREATE TABLE IF NOT EXISTS)
 sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < database/schema.sql
 
 # Frontend Update und Build

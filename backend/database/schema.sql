@@ -1,10 +1,6 @@
 -- MZ-Manager Database Schema
 -- MySQL Database for Media Center Management System
 
-SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS users, containers, assets, lendings, error_reports, device_models, rooms, asset_history, activity_logs, roles, user_roles, role_permissions, user_permissions;
-SET FOREIGN_KEY_CHECKS = 1;
-
 CREATE DATABASE IF NOT EXISTS mz_manager CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE mz_manager;
 
@@ -187,43 +183,19 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert Default Roles
-INSERT INTO roles (name, description, is_system) VALUES 
-('Administrator', 'Vollzugriff auf alle Funktionen', TRUE),
-('Mediencoach', 'Verwaltung von Geräten und Fehlermeldungen', TRUE),
-('Lehrer', 'Ausleihe von Geräten und Fehlermeldungen erstellen', TRUE),
-('Schüler', 'Nur Fehlermeldungen via QR-Code erstellen', TRUE);
+INSERT IGNORE INTO roles (name, description, is_system) VALUES 
+('Administrator', 'Vollzugriff auf alle Funktionen', TRUE);
 
 -- Insert Default Permissions for Administrator
 SET @admin_role_id = (SELECT id FROM roles WHERE name = 'Administrator');
-INSERT INTO role_permissions (role_id, permission) VALUES 
+INSERT IGNORE INTO role_permissions (role_id, permission) VALUES 
 (@admin_role_id, 'all');
-
--- Insert Default Permissions for Mediencoach
-SET @coach_role_id = (SELECT id FROM roles WHERE name = 'Mediencoach');
-INSERT INTO role_permissions (role_id, permission) VALUES 
-(@coach_role_id, 'assets.manage'),
-(@coach_role_id, 'containers.manage'),
-(@coach_role_id, 'errors.manage'),
-(@coach_role_id, 'lendings.manage'),
-(@coach_role_id, 'assets.view');
-
--- Insert Default Permissions for Lehrer
-SET @lehrer_role_id = (SELECT id FROM roles WHERE name = 'Lehrer');
-INSERT INTO role_permissions (role_id, permission) VALUES 
-(@lehrer_role_id, 'lendings.create'),
-(@lehrer_role_id, 'errors.create'),
-(@lehrer_role_id, 'assets.view');
-
--- Insert Default Permissions for Schüler
-SET @schueler_role_id = (SELECT id FROM roles WHERE name = 'Schüler');
-INSERT INTO role_permissions (role_id, permission) VALUES 
-(@schueler_role_id, 'errors.create');
 
 -- Insert Default Admin User
 -- Password: admin123 (BITTE ÄNDERN!)
-INSERT INTO users (username, email, password_hash, first_name, last_name, is_active) 
+INSERT IGNORE INTO users (username, email, password_hash, first_name, last_name, is_active) 
 VALUES ('admin', 'admin@medienzentrum.local', '$2b$10$x9GoHliN8iiVaP4bmX2G1.XZB.YUlYOR5mdkr0/OHvRdZr48jZGJG', 'Admin', 'User', TRUE);
 
 -- Link Admin User to Administrator Role
 SET @admin_user_id = (SELECT id FROM users WHERE username = 'admin');
-INSERT INTO user_roles (user_id, role_id) VALUES (@admin_user_id, @admin_role_id);
+INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (@admin_user_id, @admin_role_id);
