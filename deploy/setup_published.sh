@@ -21,6 +21,7 @@ read -p "Domainname (z.B. dein-manager.de): " DOMAIN
 read -p "GitHub Repository URL: " GIT_REPO
 read -p "MySQL Root Passwort (wird zur Installation benötigt): " DB_ROOT_PASS
 read -p "Gewünschtes MySQL Passwort für 'mz_user': " DB_USER_PASS
+read -p "Nutzt du einen externen Reverse Proxy (SSL wird extern verwaltet)? (y/n): " USE_PROXY
 
 PROJECT_PATH="/var/www/mz-manager"
 
@@ -89,15 +90,26 @@ sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -
 # 9. Nginx Konfiguration
 echo -e "${GREEN}🌐 Konfiguriere Nginx...${NC}"
 NGINX_CONF="/etc/nginx/sites-available/mz-manager"
-sed -e "s/\${DOMAIN}/${DOMAIN}/g" -e "s|\${PROJECT_PATH}|${PROJECT_PATH}|g" "$PROJECT_PATH/deploy/nginx_published.conf" | sudo tee "$NGINX_CONF" > /dev/null
+
+if [ "$USE_PROXY" == "y" ]; then
+    echo -e "${YELLOW}Verwende Proxy-Konfiguration (Port 80)...${NC}"
+    sed -e "s/\${DOMAIN}/${DOMAIN}/g" -e "s|\${PROJECT_PATH}|${PROJECT_PATH}|g" "$PROJECT_PATH/deploy/nginx_proxy.conf" | sudo tee "$NGINX_CONF" > /dev/null
+else
+    echo -e "${YELLOW}Verwende Standard-Konfiguration (Port 80/443)...${NC}"
+    sed -e "s/\${DOMAIN}/${DOMAIN}/g" -e "s|\${PROJECT_PATH}|${PROJECT_PATH}|g" "$PROJECT_PATH/deploy/nginx_published.conf" | sudo tee "$NGINX_CONF" > /dev/null
+fi
 
 sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl restart nginx
 
-# 10. SSL mit Certbot
-echo -e "${GREEN}🔒 Erstelle SSL-Zertifikat für ${DOMAIN}...${NC}"
-sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email webmaster@$DOMAIN
+# 10. SSL mit Certbot (nur wenn kein Proxy genutzt wird)
+if [ "$USE_PROXY" != "y" ]; then
+    echo -e "${GREEN}🔒 Erstelle SSL-Zertifikat für ${DOMAIN}...${NC}"
+    sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email webmaster@$DOMAIN
+else
+    echo -e "${YELLOW}Überspringe SSL-Erhalt (wird extern verwaltet).${NC}"
+fi
 
 echo -e "${BLUE}==============================================${NC}"
 echo -e "${GREEN}✅ Setup erfolgreich abgeschlossen!${NC}"
