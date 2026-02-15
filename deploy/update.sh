@@ -58,6 +58,7 @@ npm run build
 # Restart Backend Service
 echo -e "${GREEN}🚀 Starte Backend-Dienst neu...${NC}"
 pm2 restart mz-manager-api || pm2 start server.js --name mz-manager-api
+pm2 save
 
 echo -e "${BLUE}==============================================${NC}"
 echo -e "${GREEN}✅ Update erfolgreich abgeschlossen!${NC}"
