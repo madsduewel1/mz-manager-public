@@ -66,7 +66,7 @@ npm install --production
 
 # .env erstellen
 cat <<EOF > .env
-DB_HOST=localhost
+DB_HOST=127.0.0.1
 DB_USER=mz_user
 DB_PASSWORD=${DB_USER_PASS}
 DB_NAME=mz_manager
