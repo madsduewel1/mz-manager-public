@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /mz-manager/
+  
+  # Proxy API-Abfragen an das Backend (Port 5000)
+  RewriteRule ^api/(.*)$ http://localhost:5000/api/$1 [P,L]
+  RewriteRule ^uploads/(.*)$ http://localhost:5000/uploads/$1 [P,L]
+
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /mz-manager/index.html [L]
+</IfModule>
