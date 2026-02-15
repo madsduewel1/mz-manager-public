@@ -86,14 +86,19 @@ npm install
 npm run build
 
 # 8. PM2 Installation und Start
-echo -e "${GREEN}🚀 Starte Backend-Prozess mit PM2...${NC}"
+echo -e "${GREEN}🚀 Richte Backend-Prozess mit PM2 ein...${NC}"
 sudo npm install -g pm2
-cd ../backend
-# Versuche zu starten, falls schon läuft -> Restart
-pm2 start server.js --name mz-manager-api || pm2 restart mz-manager-api
+
+cd "$PROJECT_PATH/backend"
+
+# Bestehenden Prozess löschen (falls vorhanden), um sauber zu starten
+pm2 delete mz-manager-api 2>/dev/null || true
+pm2 start server.js --name mz-manager-api
 pm2 save
-# Startup-Script nur beim ersten Mal oder erzwingen
-sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp $HOME --force
+
+# PM2 beim Systemstart (nur wenn noch nicht gesetzt)
+pm2 startup systemd > /dev/null 2>&1 || true
+pm2 save
 
 # 9. Nginx Konfiguration
 echo -e "${GREEN}🌐 Konfiguriere Nginx...${NC}"
