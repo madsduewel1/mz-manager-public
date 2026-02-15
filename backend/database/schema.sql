@@ -1,6 +1,10 @@
 -- MZ-Manager Database Schema
 -- MySQL Database for Media Center Management System
 
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS users, containers, assets, lendings, error_reports, device_models, rooms, asset_history, activity_logs, roles, user_roles, role_permissions, user_permissions;
+SET FOREIGN_KEY_CHECKS = 1;
+
 CREATE DATABASE IF NOT EXISTS mz_manager CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE mz_manager;
 
