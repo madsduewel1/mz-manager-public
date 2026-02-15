@@ -40,12 +40,16 @@ echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.co
 sudo apt update
 sudo apt install -y nodejs build-essential nginx mysql-server git
 
-# 4. MySQL absichern und Datenbank einrichten
-echo -e "${GREEN}💾 Richte MySQL-Datenbank ein...${NC}"
+# 4. MySQL absichern# 5. Datenbank Setup
+echo -e "${GREEN}🗄️ Richte MySQL Datenbank ein...${NC}"
 sudo mysql -e "CREATE DATABASE IF NOT EXISTS mz_manager CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 sudo mysql -e "CREATE USER IF NOT EXISTS 'mz_user'@'localhost' IDENTIFIED BY '${DB_USER_PASS}';"
 sudo mysql -e "GRANT ALL PRIVILEGES ON mz_manager.* TO 'mz_user'@'localhost';"
 sudo mysql -e "FLUSH PRIVILEGES;"
+
+echo -e "${GREEN}💾 Importiere Datenbank-Schema...${NC}"
+# Import schema from backend folder
+sudo mysql mz_manager < "$PROJECT_PATH/backend/database/schema.sql"
 
 # 5. Projekt klonen
 echo -e "${GREEN}📥 Klone Repository nach ${PROJECT_PATH}...${NC}"

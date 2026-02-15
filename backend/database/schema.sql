@@ -10,13 +10,49 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('Administrator', 'Mediencoach', 'Lehrer', 'Schüler') NOT NULL DEFAULT 'Lehrer',
     first_name VARCHAR(50),
     last_name VARCHAR(50),
+    is_active BOOLEAN DEFAULT TRUE,
+    requires_password_change BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_username (username),
-    INDEX idx_role (role)
+    INDEX idx_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Roles Table
+CREATE TABLE IF NOT EXISTS roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    is_system BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Role Permissions Table
+CREATE TABLE IF NOT EXISTS role_permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    role_id INT NOT NULL,
+    permission VARCHAR(100) NOT NULL,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_role_perm (role_id, permission)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- User Roles Join Table
+CREATE TABLE IF NOT EXISTS user_roles (
+    user_id INT NOT NULL,
+    role_id INT NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- User Direct Permissions Table
+CREATE TABLE IF NOT EXISTS user_permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    permission VARCHAR(100) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_user_perm (user_id, permission)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Containers Table (iPad-Wagen, Laptopwagen, Räume, etc.)
@@ -26,6 +62,8 @@ CREATE TABLE IF NOT EXISTS containers (
     type ENUM('wagen', 'raum', 'koffer', 'fach', 'sonstiges') NOT NULL,
     description TEXT,
     location VARCHAR(200),
+    building VARCHAR(100),
+    floor VARCHAR(50),
     parent_container_id INT NULL,
     qr_code VARCHAR(50) UNIQUE NOT NULL,
     capacity INT DEFAULT 0,
@@ -117,16 +155,6 @@ CREATE TABLE IF NOT EXISTS device_models (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Rooms Table
-CREATE TABLE IF NOT EXISTS rooms (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    building VARCHAR(100),
-    floor VARCHAR(50),
-    capacity INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Asset History Table (Historie aller Änderungen)
 CREATE TABLE IF NOT EXISTS asset_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -143,8 +171,55 @@ CREATE TABLE IF NOT EXISTS asset_history (
     INDEX idx_action (action)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Activity Logs Table
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    action VARCHAR(50) NOT NULL,
+    details TEXT,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Insert Default Roles
+INSERT INTO roles (name, description, is_system) VALUES 
+('Administrator', 'Vollzugriff auf alle Funktionen', TRUE),
+('Mediencoach', 'Verwaltung von Geräten und Fehlermeldungen', TRUE),
+('Lehrer', 'Ausleihe von Geräten und Fehlermeldungen erstellen', TRUE),
+('Schüler', 'Nur Fehlermeldungen via QR-Code erstellen', TRUE);
+
+-- Insert Default Permissions for Administrator
+SET @admin_role_id = (SELECT id FROM roles WHERE name = 'Administrator');
+INSERT INTO role_permissions (role_id, permission) VALUES 
+(@admin_role_id, 'all');
+
+-- Insert Default Permissions for Mediencoach
+SET @coach_role_id = (SELECT id FROM roles WHERE name = 'Mediencoach');
+INSERT INTO role_permissions (role_id, permission) VALUES 
+(@coach_role_id, 'assets.manage'),
+(@coach_role_id, 'containers.manage'),
+(@coach_role_id, 'errors.manage'),
+(@coach_role_id, 'lendings.manage'),
+(@coach_role_id, 'assets.view');
+
+-- Insert Default Permissions for Lehrer
+SET @lehrer_role_id = (SELECT id FROM roles WHERE name = 'Lehrer');
+INSERT INTO role_permissions (role_id, permission) VALUES 
+(@lehrer_role_id, 'lendings.create'),
+(@lehrer_role_id, 'errors.create'),
+(@lehrer_role_id, 'assets.view');
+
+-- Insert Default Permissions for Schüler
+SET @schueler_role_id = (SELECT id FROM roles WHERE name = 'Schüler');
+INSERT INTO role_permissions (role_id, permission) VALUES 
+(@schueler_role_id, 'errors.create');
+
 -- Insert Default Admin User
 -- Password: admin123 (BITTE ÄNDERN!)
-INSERT INTO users (username, email, password_hash, role, first_name, last_name) 
-VALUES ('admin', 'admin@medienzentrum.local', '$2b$10$x9GoHliN8iiVaP4bmX2G1.XZB.YUlYOR5mdkr0/OHvRdZr48jZGJG', 'Administrator', 'Admin', 'User')
-ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash);
+INSERT INTO users (username, email, password_hash, first_name, last_name, is_active) 
+VALUES ('admin', 'admin@medienzentrum.local', '$2b$10$x9GoHliN8iiVaP4bmX2G1.XZB.YUlYOR5mdkr0/OHvRdZr48jZGJG', 'Admin', 'User', TRUE);
+
+-- Link Admin User to Administrator Role
+SET @admin_user_id = (SELECT id FROM users WHERE username = 'admin');
+INSERT INTO user_roles (user_id, role_id) VALUES (@admin_user_id, @admin_role_id);

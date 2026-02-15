@@ -24,19 +24,31 @@ echo -e "${GREEN}📥 Ziehe neuesten Code von GitHub...${NC}"
 git pull origin main
 
 # Backend Update
-echo -e "${GREEN}🔧 Aktualisiere Backend-Abhängigkeiten...${NC}"
+echo -e "${GREEN}🔧 Aktualisiere Backend...${NC}"
 cd backend
+# Berechtigungen fixen
+sudo chown -R $USER:$USER .
 npm install --production
+
+# PRIVATER FIX: Datenbank-Schema aktualisieren
+echo -e "${GREEN}💾 Aktualisiere Datenbank-Schema...${NC}"
+# Wir nutzen die Zugangsdaten aus der .env
+export $(grep -v '^#' .env | xargs)
+sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < database/schema.sql
 
 # Frontend Update und Build
 echo -e "${GREEN}🎨 Baue Frontend neu...${NC}"
 cd ../frontend
+# Berechtigungen fixen
+sudo chown -R $USER:$USER .
 npm install
+# Vite ausführbar machen
+chmod +x node_modules/.bin/vite || true
 npm run build
 
 # Restart Backend Service
 echo -e "${GREEN}🚀 Starte Backend-Dienst neu...${NC}"
-pm2 restart mz-manager-api
+pm2 restart mz-manager-api || pm2 start server.js --name mz-manager-api
 
 echo -e "${BLUE}==============================================${NC}"
 echo -e "${GREEN}✅ Update erfolgreich abgeschlossen!${NC}"
