@@ -31,14 +31,14 @@ echo -e "${GREEN}📦 Aktualisiere System-Pakete...${NC}"
 sudo apt update && sudo apt upgrade -y
 
 # 3. Installation von Abhängigkeiten
-echo -e "${GREEN}📦 Installiere Node.js, Nginx, MySQL und Tools...${NC}"
+echo -e "${GREEN}📦 Installiere Node.js 20 (LTS), Nginx, MySQL und Tools...${NC}"
 sudo apt update
 sudo apt install -y ca-certificates curl gnupg
 sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
 sudo apt update
-sudo apt install -y nodejs build-essential nginx mysql-server certbot python3-certbot-nginx git
+sudo apt install -y nodejs build-essential nginx mysql-server git
 
 # 4. MySQL absichern und Datenbank einrichten
 echo -e "${GREEN}💾 Richte MySQL-Datenbank ein...${NC}"
@@ -87,18 +87,19 @@ npm run build
 
 # 8. PM2 Installation und Start
 echo -e "${GREEN}🚀 Richte Backend-Prozess mit PM2 ein...${NC}"
-sudo npm install -g pm2
+# Behandle npm install Fehler sanft
+sudo npm install -g pm2 || echo -e "${YELLOW}PM2 war bereits installiert oder npm hatte ein Problem. Fahre fort...${NC}"
 
 cd "$PROJECT_PATH/backend"
 
-# Bestehenden Prozess löschen (falls vorhanden), um sauber zu starten
-pm2 delete mz-manager-api 2>/dev/null || true
+# Hier deaktivieren wir kurz "exit on error", damit PM2 Konflikte nicht das ganze Skript töten
+set +e
+echo -e "${GREEN}🔄 Starte Backend-Dienst...${NC}"
+pm2 delete mz-manager-api 2>/dev/null
 pm2 start server.js --name mz-manager-api
 pm2 save
-
-# PM2 beim Systemstart (nur wenn noch nicht gesetzt)
-pm2 startup systemd > /dev/null 2>&1 || true
-pm2 save
+pm2 startup systemd > /dev/null 2>&1
+set -e
 
 # 9. Nginx Konfiguration
 echo -e "${GREEN}🌐 Konfiguriere Nginx...${NC}"
