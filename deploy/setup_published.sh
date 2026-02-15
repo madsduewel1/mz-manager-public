@@ -96,24 +96,33 @@ sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -
 echo -e "${GREEN}🌐 Konfiguriere Nginx...${NC}"
 NGINX_CONF="/etc/nginx/sites-available/mz-manager"
 
-if [ "$USE_PROXY" == "y" ]; then
-    echo -e "${YELLOW}Verwende Proxy-Konfiguration (Port 80)...${NC}"
+if [ "$USE_PROXY" == "y" ] || [ "$USE_PROXY" == "Y" ]; then
+    echo -e "${YELLOW}Verwende Proxy-Konfiguration (Nur Port 80, SSL wird extern verwaltet)...${NC}"
     sed -e "s/\${DOMAIN}/${DOMAIN}/g" -e "s|\${PROJECT_PATH}|${PROJECT_PATH}|g" "$PROJECT_PATH/deploy/nginx_proxy.conf" | sudo tee "$NGINX_CONF" > /dev/null
 else
-    echo -e "${YELLOW}Verwende Standard-Konfiguration (Port 80/443)...${NC}"
+    echo -e "${YELLOW}Verwende Standard-Konfiguration (Port 80, bereit für SSL-Erhalt)...${NC}"
     sed -e "s/\${DOMAIN}/${DOMAIN}/g" -e "s|\${PROJECT_PATH}|${PROJECT_PATH}|g" "$PROJECT_PATH/deploy/nginx_published.conf" | sudo tee "$NGINX_CONF" > /dev/null
 fi
 
 sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t && sudo systemctl restart nginx
+
+echo -e "${GREEN}🔍 Teste Nginx Konfiguration...${NC}"
+if sudo nginx -t; then
+    sudo systemctl restart nginx
+else
+    echo -e "${RED}❌ Nginx Konfigurations-Test fehlgeschlagen!${NC}"
+    echo "Bitte prüfe die Dateien in /etc/nginx/sites-available/mz-manager"
+    exit 1
+fi
 
 # 10. SSL mit Certbot (nur wenn kein Proxy genutzt wird)
-if [ "$USE_PROXY" != "y" ]; then
+if [ "$USE_PROXY" != "y" ] && [ "$USE_PROXY" != "Y" ]; then
     echo -e "${GREEN}🔒 Erstelle SSL-Zertifikat für ${DOMAIN}...${NC}"
-    sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email webmaster@$DOMAIN
+    # Wir nutzen --nginx, Certbot wird die Config automatisch um SSL erweitern
+    sudo certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email
 else
-    echo -e "${YELLOW}Überspringe SSL-Erhalt (wird extern verwaltet).${NC}"
+    echo -e "${YELLOW}Überspringe internen SSL-Erhalt (wird durch deinen externen Proxy erledigt).${NC}"
 fi
 
 echo -e "${BLUE}==============================================${NC}"
