@@ -14,6 +14,10 @@ echo -e "${BLUE}       MZ-Manager Update Service             ${NC}"
 echo -e "${BLUE}==============================================${NC}"
 
 PROJECT_PATH="/var/www/mz-manager"
+
+echo -e "${GREEN}📦 Aktualisiere System-Pakete (apt)...${NC}"
+sudo apt update && sudo apt upgrade -y
+
 cd "$PROJECT_PATH"
 
 echo -e "${GREEN}📥 Ziehe neuesten Code von GitHub...${NC}"
