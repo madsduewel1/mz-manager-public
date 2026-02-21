@@ -3,14 +3,12 @@ import { Link } from 'react-router-dom';
 import { FiAlertCircle, FiClock, FiPackage, FiBox, FiRepeat, FiMapPin, FiCheck } from 'react-icons/fi';
 import { dashboardAPI } from '../services/api';
 import { getUser, hasPermission, hasRole, hasAnyPermissions, hasAdminPermission } from '../utils/auth';
-import PasswordChangeModal from '../components/PasswordChangeModal';
 import { useNotification } from '../contexts/NotificationContext';
 
 function Dashboard() {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [showPasswordModal, setShowPasswordModal] = useState(false);
     const user = getUser();
     const { info } = useNotification();
 
@@ -19,12 +17,6 @@ function Dashboard() {
 
         // Auto-refresh every 30 seconds for live sync
         const intervalId = setInterval(loadDashboard, 30000);
-
-        // Check if password must be changed
-        if (user?.must_change_password) {
-            setShowPasswordModal(true);
-            info('Bitte ändern Sie Ihr vorläufiges Passwort');
-        }
 
         return () => clearInterval(intervalId); // Cleanup on unmount
     }, []);
@@ -89,32 +81,32 @@ function Dashboard() {
             {/* Statistics Grid - Only for Admins */}
             {hasRole('Administrator') && (
                 <div className="grid grid-4 grid-mobile-1 mb-xl">
-                    <div className="stat-card" style={{ borderLeft: '4px solid var(--color-error)' }}>
+                    <div className="stat-card" style={{ borderTop: '4px solid var(--color-error)' }}>
+                        <div className="stat-label">Defekte Geräte</div>
                         <div className="stat-value" style={{ color: 'var(--color-error)' }}>
                             {stats.statistics.defective_assets}
                         </div>
-                        <div className="stat-label">🔴 Defekte Geräte</div>
                     </div>
 
-                    <div className="stat-card" style={{ borderLeft: '4px solid var(--color-warning)' }}>
+                    <div className="stat-card" style={{ borderTop: '4px solid var(--color-warning)' }}>
+                        <div className="stat-label">Überfällige Ausleihen</div>
                         <div className="stat-value" style={{ color: 'var(--color-warning)' }}>
                             {stats.statistics.overdue_lendings}
                         </div>
-                        <div className="stat-label">🟡 Überfällige Ausleihen</div>
                     </div>
 
-                    <div className="stat-card" style={{ borderLeft: '4px solid var(--color-success)' }}>
+                    <div className="stat-card" style={{ borderTop: '4px solid var(--color-success)' }}>
+                        <div className="stat-label">Container</div>
                         <div className="stat-value" style={{ color: 'var(--color-success)' }}>
                             {stats.statistics.total_containers}
                         </div>
-                        <div className="stat-label">🟢 Container</div>
                     </div>
 
-                    <div className="stat-card" style={{ borderLeft: '4px solid var(--color-info)' }}>
+                    <div className="stat-card" style={{ borderTop: '4px solid var(--color-info)' }}>
+                        <div className="stat-label">Gesamt Geräte</div>
                         <div className="stat-value" style={{ color: 'var(--color-info)' }}>
                             {stats.statistics.total_assets}
                         </div>
-                        <div className="stat-label">📦 Gesamt Geräte</div>
                     </div>
                 </div>
             )}
@@ -135,11 +127,11 @@ function Dashboard() {
                         </div>
                         <div className="card-body">
                             {stats.recent_errors.length === 0 ? (
-                                <p className="text-muted text-center">Keine offenen Fehlermeldungen</p>
+                                <p className="text-muted text-center py-xl">Keine offenen Fehlermeldungen</p>
                             ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+                                <div className="flex flex-col gap-sm">
                                     {stats.recent_errors.map((error) => (
-                                        <div key={error.id} style={styles.errorItem}>
+                                        <div key={error.id} className="flex items-center justify-between p-md bg-light border radius-md">
                                             <div>
                                                 <strong>{error.inventory_number || 'Container'}</strong>
                                                 <p className="text-small text-muted">{error.description.substring(0, 60)}...</p>
@@ -167,11 +159,11 @@ function Dashboard() {
                         </div>
                         <div className="card-body">
                             {stats.upcoming_returns.length === 0 ? (
-                                <p className="text-muted text-center">Keine anstehenden Rückgaben</p>
+                                <p className="text-muted text-center py-xl">Keine anstehenden Rückgaben</p>
                             ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+                                <div className="flex flex-col gap-sm">
                                     {stats.upcoming_returns.map((lending) => (
-                                        <div key={lending.id} style={styles.lendingItem}>
+                                        <div key={lending.id} className="p-md bg-light border radius-md">
                                             <div>
                                                 <strong>{lending.inventory_number || lending.container_name}</strong>
                                                 <p className="text-small text-muted">
@@ -213,31 +205,10 @@ function Dashboard() {
                 </div>
             )}
 
-            <PasswordChangeModal
-                isOpen={showPasswordModal}
-                onClose={() => setShowPasswordModal(false)}
-                mandatory={user?.must_change_password}
-            />
         </div>
     );
 }
 
-const styles = {
-    errorItem: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'start',
-        padding: 'var(--space-md)',
-        background: 'var(--color-bg-light)',
-        borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--color-border)'
-    },
-    lendingItem: {
-        padding: 'var(--space-md)',
-        background: 'var(--color-bg-light)',
-        borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--color-border)'
-    }
-};
+const styles = {};
 
 export default Dashboard;

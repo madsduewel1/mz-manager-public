@@ -10,7 +10,7 @@ router.get('/', authMiddleware, requirePermission('users.manage'), async (req, r
     try {
         const [users] = await pool.query(`
             SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.created_at,
-                   u.is_active,
+                   u.is_active, u.theme,
                    GROUP_CONCAT(DISTINCT r.name) as roles_list,
                    GROUP_CONCAT(DISTINCT up.permission) as permissions_list
             FROM users u
@@ -40,12 +40,21 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
     try {
         await connection.beginTransaction();
         const { id } = req.params;
-        const { username, email, roles, first_name, last_name } = req.body;
+        const { username, email, roles, first_name, last_name, password, requires_password_change } = req.body;
 
-        await connection.query(
-            'UPDATE users SET username = ?, email = ?, first_name = ?, last_name = ? WHERE id = ?',
-            [username, email, first_name, last_name, id]
-        );
+        let query = 'UPDATE users SET username = ?, email = ?, first_name = ?, last_name = ?';
+        let params = [username, email, first_name, last_name];
+
+        if (password) {
+            const password_hash = await bcrypt.hash(password, 10);
+            query += ', password_hash = ?, requires_password_change = ?';
+            params.push(password_hash, requires_password_change ? 1 : 0);
+        }
+
+        query += ' WHERE id = ?';
+        params.push(id);
+
+        await connection.query(query, params);
 
         if (Array.isArray(roles)) {
             await connection.query('DELETE FROM user_roles WHERE user_id = ?', [id]);
@@ -78,17 +87,18 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
 router.post('/:id/reset-password', authMiddleware, requirePermission('users.manage'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { new_password } = req.body;
+        const { new_password, password, requires_password_change } = req.body;
+        const finalPassword = new_password || password;
 
-        if (!new_password || new_password.length < 6) {
+        if (!finalPassword || finalPassword.length < 6) {
             return res.status(400).json({ error: 'Passwort muss mindestens 6 Zeichen lang sein' });
         }
 
-        const password_hash = await bcrypt.hash(new_password, 10);
+        const password_hash = await bcrypt.hash(finalPassword, 10);
 
         await pool.query(
-            'UPDATE users SET password_hash = ? WHERE id = ?',
-            [password_hash, id]
+            'UPDATE users SET password_hash = ?, requires_password_change = ? WHERE id = ?',
+            [password_hash, requires_password_change ? 1 : 0, id]
         );
 
         await logActivity(req.user.id, 'PWD_RESET', `Passwort für Benutzer ID ${id} zurückgesetzt`);
@@ -105,9 +115,23 @@ router.delete('/:id', authMiddleware, requirePermission('users.manage'), async (
     try {
         const { id } = req.params;
 
-        // Prevent self-deletion
-        if (parseInt(id) === req.user.id) {
-            return res.status(400).json({ error: 'Man kann sich nicht selbst löschen' });
+        // Check if this is the last admin
+        const [admins] = await pool.query(`
+            SELECT COUNT(*) as count 
+            FROM user_roles ur 
+            JOIN roles r ON ur.role_id = r.id 
+            WHERE r.name = 'Administrator'
+        `);
+
+        const [userToDeleteIsAdmin] = await pool.query(`
+            SELECT COUNT(*) as count 
+            FROM user_roles ur 
+            JOIN roles r ON ur.role_id = r.id 
+            WHERE ur.user_id = ? AND r.name = 'Administrator'
+        `, [id]);
+
+        if (userToDeleteIsAdmin[0].count > 0 && admins[0].count <= 1) {
+            return res.status(400).json({ error: 'Der letzte Administrator kann nicht gelöscht werden' });
         }
 
         const [result] = await pool.query('DELETE FROM users WHERE id = ?', [id]);
@@ -130,15 +154,31 @@ router.post('/:id/toggle-active', authMiddleware, requirePermission('users.manag
     try {
         const { id } = req.params;
 
-        // Prevent self-deactivation
-        if (parseInt(id) === req.user.id) {
-            return res.status(400).json({ error: 'Sie können Ihr eigenes Konto nicht deaktivieren' });
+        // Check if this is the last active admin
+        const [activeAdmins] = await pool.query(`
+            SELECT COUNT(*) as count 
+            FROM users u
+            JOIN user_roles ur ON u.id = ur.user_id 
+            JOIN roles r ON ur.role_id = r.id 
+            WHERE r.name = 'Administrator' AND u.is_active = 1
+        `);
+
+        const [userToToggleIsAdmin] = await pool.query(`
+            SELECT COUNT(*) as count 
+            FROM user_roles ur 
+            JOIN roles r ON ur.role_id = r.id 
+            WHERE ur.user_id = ? AND r.name = 'Administrator'
+        `, [id]);
+
+        const [targetUser] = await pool.query('SELECT is_active FROM users WHERE id = ?', [id]);
+        if (targetUser.length === 0) return res.status(404).json({ error: 'Benutzer nicht gefunden' });
+
+        // If trying to deactivate an admin, ensure they aren't the last active one
+        if (targetUser[0].is_active && userToToggleIsAdmin[0].count > 0 && activeAdmins[0].count <= 1) {
+            return res.status(400).json({ error: 'Der letzte aktive Administrator kann nicht deaktiviert werden' });
         }
 
-        const [users] = await pool.query('SELECT is_active FROM users WHERE id = ?', [id]);
-        if (users.length === 0) return res.status(404).json({ error: 'Benutzer nicht gefunden' });
-
-        const newStatus = users[0].is_active ? 0 : 1;
+        const newStatus = targetUser[0].is_active ? 0 : 1;
         await pool.query('UPDATE users SET is_active = ? WHERE id = ?', [newStatus, id]);
 
         await logActivity(req.user.id, 'USER_TOGGLE', `Benutzer ID ${id} ${newStatus ? 'aktiviert' : 'deaktiviert'}`);

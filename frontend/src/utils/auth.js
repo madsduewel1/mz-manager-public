@@ -26,7 +26,19 @@ export const removeUser = () => {
 };
 
 export const isAuthenticated = () => {
-    return !!getToken();
+    const token = getToken();
+    if (!token) return false;
+
+    // 10-minute inactivity check
+    const lastActivity = localStorage.getItem('lastActivity');
+    if (lastActivity) {
+        const TIMEOUT_MS = 10 * 60 * 1000;
+        if (Date.now() - parseInt(lastActivity) > TIMEOUT_MS) {
+            return false;
+        }
+    }
+
+    return true;
 };
 
 export const hasRole = (...roles) => {

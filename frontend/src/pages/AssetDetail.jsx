@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiArrowLeft, FiClock } from 'react-icons/fi';
+import { FiArrowLeft, FiClock, FiBox } from 'react-icons/fi';
 import { assetsAPI } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 
@@ -69,10 +69,32 @@ function AssetDetail() {
                         </div>
 
                         {qrCode && (
-                            <div style={{ textAlign: 'center' }}>
-                                <h3>QR-Code</h3>
-                                <img src={qrCode} alt="QR Code" style={{ maxWidth: '300px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)' }} />
-                                <p className="text-small text-muted mt-md">Zum Drucken & Aufkleben</p>
+                            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                                <h4 className="mb-0 text-muted" style={{ fontSize: 'var(--font-size-sm)' }}>QR-Code Label</h4>
+                                <div style={{
+                                    background: 'white',
+                                    padding: 'var(--space-sm)',
+                                    borderRadius: 'var(--radius-md)',
+                                    boxShadow: 'var(--shadow-sm)',
+                                    border: '1px solid var(--color-border)',
+                                    maxWidth: 'fit-content'
+                                }}>
+                                    <img src={qrCode} alt="QR Code" style={{ width: '120px', display: 'block' }} />
+                                    <code style={{ display: 'block', marginTop: 'var(--space-xs)', fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                                        {asset.inventory_number}
+                                    </code>
+                                </div>
+                                <button
+                                    className="btn btn-sm btn-secondary"
+                                    onClick={() => {
+                                        const url = `/api/admin/export/qr-pdf/${asset.id}?token=${localStorage.getItem('token')}&type=asset`;
+                                        // Note: Assuming the backend handles type=asset or I might need to adjust the export route
+                                        window.open(url, '_blank');
+                                    }}
+                                    style={{ gap: '6px', marginTop: 'var(--space-xs)' }}
+                                >
+                                    <FiBox size={14} /> PDF Export
+                                </button>
                             </div>
                         )}
                     </div>

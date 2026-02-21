@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     last_name VARCHAR(50),
     is_active BOOLEAN DEFAULT TRUE,
     requires_password_change BOOLEAN DEFAULT FALSE,
+    has_seen_onboarding BOOLEAN DEFAULT FALSE,
+    theme ENUM('light', 'dark') DEFAULT 'light',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_username (username)
@@ -182,9 +184,20 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Settings Table (for organization name, etc.)
+CREATE TABLE IF NOT EXISTS settings (
+    setting_key VARCHAR(50) PRIMARY KEY,
+    setting_value TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Insert Default Settings
+INSERT IGNORE INTO settings (setting_key, setting_value) VALUES ('org_name', 'MZ-MANAGER');
+
 -- Insert Default Roles
 INSERT IGNORE INTO roles (name, description, is_system) VALUES 
-('Administrator', 'Vollzugriff auf alle Funktionen', TRUE);
+('Administrator', 'Vollzugriff auf alle Funktionen', TRUE),
+('Benutzer', 'Standardbenutzer ohne Berechtigungen', TRUE);
 
 -- Insert Default Permissions for Administrator
 SET @admin_role_id = (SELECT id FROM roles WHERE name = 'Administrator');

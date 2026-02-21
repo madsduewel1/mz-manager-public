@@ -29,7 +29,10 @@ export const authAPI = {
     login: (credentials) => api.post('/auth/login', credentials),
     register: (userData) => api.post('/auth/register', userData),
     getMe: () => api.get('/auth/me'),
-    changePassword: (data) => api.put('/auth/change-password', data)
+    changePassword: (data) => api.put('/auth/change-password', data),
+    onboardingComplete: () => api.post('/auth/onboarding-complete'),
+    updateTheme: (theme) => api.post('/auth/update-theme', { theme }),
+    me: () => api.get('/auth/me')
 };
 
 // Assets API
@@ -66,6 +69,9 @@ export const lendingsAPI = {
 export const errorsAPI = {
     getAll: (params) => api.get('/errors', { params }),
     getPublicInfo: (qrCode) => axios.get(`/api/errors/public/${qrCode}`),
+    getPublicRooms: () => axios.get('/api/errors/public/rooms'),
+    getPublicContainersInRoom: (roomId) => axios.get(`/api/errors/public/containers/room/${roomId}`),
+    getPublicAssetsInContainer: (containerId) => axios.get(`/api/errors/public/assets/container/${containerId}`),
     submitPublic: (formData) => axios.post('/api/errors/public', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
@@ -75,6 +81,31 @@ export const errorsAPI = {
 // Dashboard API
 export const dashboardAPI = {
     getStats: () => api.get('/dashboard/stats')
+};
+
+// Admin API
+export const adminAPI = {
+    getRoles: () => api.get('/admin/roles'),
+    createRole: (data) => api.post('/admin/roles', data),
+    updateRole: (id, data) => api.put(`/admin/roles/${id}`, data),
+    deleteRole: (id) => api.delete(`/admin/roles/${id}`),
+    getUsers: () => api.get('/users'),
+    createUser: (data) => api.post('/auth/register', data),
+    updateUser: (id, data) => api.put(`/users/${id}`, data),
+    deleteUser: (id) => api.delete(`/users/${id}`),
+    resetPassword: (userId, password) => api.post(`/users/${userId}/reset-password`, { password }),
+    getDeviceModels: () => api.get('/admin/device-models'),
+    createDeviceModel: (data) => api.post('/admin/device-models', data),
+    deleteDeviceModel: (id) => api.delete(`/admin/device-models/${id}`),
+    getRooms: () => api.get('/admin/rooms'),
+    createRoom: (data) => api.post('/admin/rooms', data),
+    deleteRoom: (id) => api.delete(`/admin/rooms/${id}`),
+    getLogs: () => api.get('/admin/logs'),
+    getSettings: () => api.get('/settings'),
+    updateSettings: (data) => api.post('/settings', data),
+    uploadLogo: (formData) => api.post('/settings/logo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
 };
 
 export default api;

@@ -1,47 +1,115 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { FiAlertCircle, FiCheckCircle, FiCamera } from 'react-icons/fi';
+import { useParams, useNavigate } from 'react-router-dom';
+import { FiAlertCircle, FiCheckCircle, FiCamera, FiChevronRight, FiMapPin, FiBox, FiSmartphone, FiArrowLeft, FiImage } from 'react-icons/fi';
 import { errorsAPI } from '../services/api';
 
 function PublicErrorReport() {
     const { qrCode } = useParams();
-    const [itemInfo, setItemInfo] = useState(null);
+    const navigate = useNavigate();
+
+    // UI State
+    const [step, setStep] = useState(qrCode ? 'details' : 'room'); // room, container, asset, details
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [submitted, setSubmitted] = useState(false);
+
+    // Data Lists
+    const [rooms, setRooms] = useState([]);
+    const [containers, setContainers] = useState([]);
+    const [assets, setAssets] = useState([]);
+
+    // Selection State
+    const [selectedRoom, setSelectedRoom] = useState(null);
+    const [selectedContainer, setSelectedContainer] = useState(null);
+    const [selectedAsset, setSelectedAsset] = useState(null);
+    const [scannedInfo, setScannedInfo] = useState(null);
 
     // Form state
     const [description, setDescription] = useState('');
     const [reporterName, setReporterName] = useState('');
     const [reporterEmail, setReporterEmail] = useState('');
     const [photo, setPhoto] = useState(null);
-    const [selectedAssetId, setSelectedAssetId] = useState('');
+    const [photoPreview, setPhotoPreview] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        loadItemInfo();
+        if (qrCode) {
+            loadScannedInfo();
+        } else {
+            loadRooms();
+        }
     }, [qrCode]);
 
-    const loadItemInfo = async () => {
+    const loadScannedInfo = async () => {
+        setLoading(true);
         try {
             const response = await errorsAPI.getPublicInfo(qrCode);
-            setItemInfo(response.data);
-
-            // Pre-select asset if it's a single asset
-            if (response.data.type === 'asset') {
-                setSelectedAssetId(response.data.data.id);
-            }
+            setScannedInfo(response.data);
+            setStep('details');
         } catch (err) {
-            setError('QR-Code ungültig oder nicht gefunden');
-            console.error(err);
+            setError('QR-Code ungültig oder nicht gefunden. Du kannst das Gerät aber manuell suchen.');
+            loadRooms();
         } finally {
             setLoading(false);
         }
     };
 
+    const loadRooms = async () => {
+        setLoading(true);
+        try {
+            const response = await errorsAPI.getPublicRooms();
+            setRooms(response.data);
+            setStep('room');
+        } catch (err) {
+            setError('Fehler beim Laden der Räume');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRoomSelect = async (room) => {
+        setSelectedRoom(room);
+        setLoading(true);
+        try {
+            const response = await errorsAPI.getPublicContainersInRoom(room.id);
+            setContainers(response.data);
+            if (response.data.length === 0) {
+                // If no containers, maybe there are assets directly in the room (not supported yet but safe check)
+                setStep('details');
+            } else {
+                setStep('container');
+            }
+        } catch (err) {
+            setError('Fehler beim Laden der Einheiten');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleContainerSelect = async (container) => {
+        setSelectedContainer(container);
+        setLoading(true);
+        try {
+            const response = await errorsAPI.getPublicAssetsInContainer(container.id);
+            setAssets(response.data);
+            setStep('asset');
+        } catch (err) {
+            setError('Fehler beim Laden der Geräte');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAssetSelect = (asset) => {
+        setSelectedAsset(asset);
+        setStep('details');
+    };
+
     const handlePhotoChange = (e) => {
         if (e.target.files && e.target.files[0]) {
-            setPhoto(e.target.files[0]);
+            const file = e.target.files[0];
+            setPhoto(file);
+            setPhotoPreview(URL.createObjectURL(file));
         }
     };
 
@@ -51,13 +119,22 @@ function PublicErrorReport() {
 
         try {
             const formData = new FormData();
-            formData.append('qr_code', qrCode);
+
+            // Determine IDs and QR Code
+            const currentQrCode = qrCode || scannedInfo?.data?.qr_code || selectedAsset?.qr_code || selectedContainer?.qr_code || selectedRoom?.qr_code;
+            if (currentQrCode) formData.append('qr_code', currentQrCode);
+
+            // Asset ID
+            const aid = selectedAsset?.id || (scannedInfo?.type === 'asset' ? scannedInfo.data.id : null);
+            if (aid) formData.append('selected_asset_id', aid);
+
+            // Container ID (Room or Wagon)
+            const cid = selectedContainer?.id || selectedRoom?.id || (scannedInfo?.type === 'container' ? scannedInfo.data.id : null);
+            if (cid) formData.append('container_id', cid);
+
             formData.append('description', description);
             formData.append('reporter_name', reporterName);
             formData.append('reporter_email', reporterEmail);
-            if (selectedAssetId) {
-                formData.append('selected_asset_id', selectedAssetId);
-            }
             if (photo) {
                 formData.append('photo', photo);
             }
@@ -71,15 +148,16 @@ function PublicErrorReport() {
         }
     };
 
-    if (loading) {
-        return (
-            <div style={styles.container}>
-                <div style={styles.card}>
-                    <div className="loading">Lade Informationen...</div>
-                </div>
-            </div>
-        );
-    }
+    const StepHeader = ({ title, onBack }) => (
+        <div style={styles.stepHeader}>
+            {onBack && (
+                <button onClick={onBack} style={styles.backBtn}>
+                    <FiArrowLeft size={20} />
+                </button>
+            )}
+            <h1 style={styles.title}>{title}</h1>
+        </div>
+    );
 
     if (submitted) {
         return (
@@ -87,26 +165,13 @@ function PublicErrorReport() {
                 <div style={styles.card}>
                     <div style={styles.success}>
                         <FiCheckCircle size={64} color="var(--color-success)" />
-                        <h2>Fehler erfolgreich gemeldet!</h2>
-                        <p style={{ color: 'var(--color-text-secondary)', marginTop: 'var(--space-md)' }}>
-                            Vielen Dank für deine Meldung. Das IT-Team wurde benachrichtigt und wird sich um das Problem kümmern.
+                        <h2>Meldung erhalten</h2>
+                        <p style={{ color: 'var(--color-text-secondary)', marginTop: '20px' }}>
+                            Danke! Das IT-Team wurde benachrichtigt und kümmert sich bald darum.
                         </p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (error && !itemInfo) {
-        return (
-            <div style={styles.container}>
-                <div style={styles.card}>
-                    <div style={styles.error}>
-                        <FiAlertCircle size={64} color="var(--color-error)" />
-                        <h2>Fehler</h2>
-                        <p style={{ color: 'var(--color-text-secondary)', marginTop: 'var(--space-md)' }}>
-                            {error}
-                        </p>
+                        <button onClick={() => navigate('/login')} className="btn btn-primary" style={{ marginTop: '30px' }}>
+                            Zurück zum Login
+                        </button>
                     </div>
                 </div>
             </div>
@@ -116,117 +181,144 @@ function PublicErrorReport() {
     return (
         <div style={styles.container}>
             <div style={styles.card}>
-                <div style={styles.header}>
-                    <FiAlertCircle size={48} color="var(--color-warning)" />
-                    <h1>Fehler melden</h1>
-                    <p style={styles.subtitle}>Kein Login erforderlich</p>
-                </div>
-
-                {/* Item Info */}
-                <div style={styles.itemInfo}>
-                    {itemInfo.type === 'asset' ? (
-                        <>
-                            <h3>Gerät</h3>
-                            <p><strong>Inventarnummer:</strong> {itemInfo.data.inventory_number}</p>
-                            <p><strong>Typ:</strong> {itemInfo.data.type}</p>
-                            {itemInfo.data.model && <p><strong>Modell:</strong> {itemInfo.data.model}</p>}
-                            {itemInfo.data.container_name && <p><strong>Standort:</strong> {itemInfo.data.container_name}</p>}
-                        </>
-                    ) : (
-                        <>
-                            <h3>Container</h3>
-                            <p><strong>Name:</strong> {itemInfo.data.name}</p>
-                            <p><strong>Typ:</strong> {itemInfo.data.type}</p>
-                            {itemInfo.data.location && <p><strong>Standort:</strong> {itemInfo.data.location}</p>}
-                            <p><strong>Enthaltene Geräte:</strong> {itemInfo.data.assets.length}</p>
-                        </>
-                    )}
-                </div>
-
-                {/* Error Report Form */}
-                <form onSubmit={handleSubmit}>
-                    {error && (
-                        <div style={styles.errorBox}>
-                            <FiAlertCircle size={18} />
-                            {error}
-                        </div>
-                    )}
-
-                    {/* Select Asset if Container */}
-                    {itemInfo.type === 'container' && itemInfo.data.assets.length > 0 && (
-                        <div className="form-group">
-                            <label className="form-label">Welches Gerät ist betroffen? (optional)</label>
-                            <select
-                                className="form-select"
-                                value={selectedAssetId}
-                                onChange={(e) => setSelectedAssetId(e.target.value)}
-                            >
-                                <option value="">-- Gesamter Container --</option>
-                                {itemInfo.data.assets.map((asset) => (
-                                    <option key={asset.id} value={asset.id}>
-                                        {asset.inventory_number} - {asset.type} {asset.model && `(${asset.model})`}
-                                    </option>
+                {step === 'room' && (
+                    <>
+                        <StepHeader title="Wo ist das Problem?" />
+                        <p style={styles.subtitle}>Wähle zuerst den Raum aus</p>
+                        {loading ? <div className="loading">Lade Räume...</div> : (
+                            <div style={styles.grid}>
+                                {rooms.map(room => (
+                                    <button key={room.id} style={styles.navItem} onClick={() => handleRoomSelect(room)}>
+                                        <div style={styles.navIcon}><FiMapPin /></div>
+                                        <div style={styles.navText}>
+                                            <span style={styles.navName}>{room.name}</span>
+                                            <span style={styles.navMeta}>{room.building} {room.floor && `• ${room.floor}`}</span>
+                                        </div>
+                                        <FiChevronRight style={styles.navArrow} />
+                                    </button>
                                 ))}
-                            </select>
-                        </div>
-                    )}
-
-                    <div className="form-group">
-                        <label className="form-label">Was ist das Problem? *</label>
-                        <textarea
-                            className="form-textarea"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Beschreibe den Fehler so genau wie möglich..."
-                            required
-                            rows="4"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Dein Name (optional)</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={reporterName}
-                            onChange={(e) => setReporterName(e.target.value)}
-                            placeholder="z.B. Max Mustermann"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Deine E-Mail (optional)</label>
-                        <input
-                            type="email"
-                            className="form-input"
-                            value={reporterEmail}
-                            onChange={(e) => setReporterEmail(e.target.value)}
-                            placeholder="z.B. max@example.com"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">
-                            <FiCamera size={18} style={{ verticalAlign: 'middle', marginRight: 'var(--space-xs)' }} />
-                            Foto hochladen (optional)
-                        </label>
-                        <input
-                            type="file"
-                            className="form-input"
-                            onChange={handlePhotoChange}
-                            accept="image/*"
-                        />
-                        {photo && (
-                            <p className="text-small text-muted" style={{ marginTop: 'var(--space-sm)' }}>
-                                Ausgewählt: {photo.name}
-                            </p>
+                            </div>
                         )}
-                    </div>
+                    </>
+                )}
 
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={submitting}>
-                        {submitting ? 'Wird gesendet...' : 'Fehler melden'}
-                    </button>
-                </form>
+                {step === 'container' && (
+                    <>
+                        <StepHeader title={selectedRoom.name} onBack={() => setStep('room')} />
+                        <p style={styles.subtitle}>Wähle den Schrank oder Wagen</p>
+                        {loading ? <div className="loading">Lade Einheiten...</div> : (
+                            <div style={styles.grid}>
+                                {containers.map(c => (
+                                    <button key={c.id} style={styles.navItem} onClick={() => handleContainerSelect(c)}>
+                                        <div style={styles.navIcon}><FiBox /></div>
+                                        <div style={styles.navText}>
+                                            <span style={styles.navName}>{c.name}</span>
+                                            <span style={styles.navMeta}>{c.type}</span>
+                                        </div>
+                                        <FiChevronRight style={styles.navArrow} />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {step === 'asset' && (
+                    <>
+                        <StepHeader title={selectedContainer.name} onBack={() => setStep('container')} />
+                        <p style={styles.subtitle}>Welches Gerät ist defekt?</p>
+                        {loading ? <div className="loading">Lade Geräte...</div> : (
+                            <div style={styles.grid}>
+                                <button style={{ ...styles.navItem, background: 'rgba(225, 29, 72, 0.05)' }} onClick={() => setStep('details')}>
+                                    <div style={{ ...styles.navIcon, background: 'var(--color-primary)' }}><FiAlertCircle color="white" /></div>
+                                    <div style={styles.navText}>
+                                        <span style={styles.navName}>Anderes Problem</span>
+                                        <span style={styles.navMeta}>Gilt für den gesamten Container</span>
+                                    </div>
+                                    <FiChevronRight style={styles.navArrow} />
+                                </button>
+                                {assets.map(a => (
+                                    <button key={a.id} style={styles.navItem} onClick={() => handleAssetSelect(a)}>
+                                        <div style={styles.navIcon}><FiSmartphone /></div>
+                                        <div style={styles.navText}>
+                                            <span style={styles.navName}>{a.inventory_number}</span>
+                                            <span style={styles.navMeta}>{a.model || a.type}</span>
+                                        </div>
+                                        <FiChevronRight style={styles.navArrow} />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {step === 'details' && (
+                    <>
+                        <StepHeader
+                            title="Fehler beschreiben"
+                            onBack={qrCode ? null : (selectedAsset ? () => setStep('asset') : () => setStep('container'))}
+                        />
+
+                        <div style={styles.selectionSummary}>
+                            {scannedInfo ? (
+                                <span>{scannedInfo.type === 'asset' ? `Gerät: ${scannedInfo.data.inventory_number}` : `Container: ${scannedInfo.data.name}`}</span>
+                            ) : (
+                                <span>
+                                    {selectedRoom?.name}
+                                    {selectedContainer && ` > ${selectedContainer.name}`}
+                                    {selectedAsset && ` > ${selectedAsset.inventory_number}`}
+                                </span>
+                            )}
+                        </div>
+
+                        <form onSubmit={handleSubmit} style={styles.form}>
+                            <div className="form-group">
+                                <label className="form-label">Was funktioniert nicht? *</label>
+                                <textarea
+                                    className="form-input"
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    placeholder="z.B. Display flackert, Akku lädt nicht..."
+                                    required
+                                    rows="4"
+                                    style={styles.textarea}
+                                />
+                            </div>
+
+                            <div style={styles.photoSection}>
+                                <label style={styles.photoUpload}>
+                                    <input type="file" onChange={handlePhotoChange} accept="image/*" style={{ display: 'none' }} />
+                                    {photoPreview ? (
+                                        <img src={photoPreview} alt="Preview" style={styles.previewImage} />
+                                    ) : (
+                                        <div style={styles.photoPlaceholder}>
+                                            <FiCamera size={24} />
+                                            <span>Foto hinzufügen (optional)</span>
+                                        </div>
+                                    )}
+                                </label>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Dein Name (optional)</label>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    value={reporterName}
+                                    onChange={(e) => setReporterName(e.target.value)}
+                                    placeholder="Max Mustermann"
+                                    style={styles.input}
+                                />
+                            </div>
+
+                            <button type="submit" className="btn btn-primary" style={styles.submitBtn} disabled={submitting}>
+                                {submitting ? 'Wird gesendet...' : 'Fehler jetzt melden'}
+                            </button>
+                        </form>
+                    </>
+                )}
+
+                {error && <div style={styles.errorBox}><FiAlertCircle /> {error}</div>}
             </div>
         </div>
     );
@@ -235,53 +327,177 @@ function PublicErrorReport() {
 const styles = {
     container: {
         minHeight: '100vh',
+        background: 'var(--color-bg-dark)',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: 'var(--space-lg)',
-        background: 'linear-gradient(135deg, var(--color-bg-dark), var(--color-bg-medium))'
+        padding: '20px',
+        fontFamily: 'var(--font-family)'
     },
     card: {
         width: '100%',
-        maxWidth: '600px',
+        maxWidth: '500px',
         background: 'var(--color-bg-medium)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-xl)',
-        padding: 'var(--space-2xl)',
-        boxShadow: 'var(--shadow-xl)'
+        borderRadius: '24px',
+        padding: '30px 20px',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+        marginTop: '20px'
     },
-    header: {
-        textAlign: 'center',
-        marginBottom: 'var(--space-xl)'
-    },
-    subtitle: {
-        color: 'var(--color-text-secondary)',
-        marginTop: 'var(--space-sm)'
-    },
-    itemInfo: {
-        background: 'var(--color-bg-light)',
-        padding: 'var(--space-lg)',
-        borderRadius: 'var(--radius-md)',
-        marginBottom: 'var(--space-xl)',
-        border: '1px solid var(--color-border)'
-    },
-    errorBox: {
-        background: 'hsla(0, 84%, 60%, 0.15)',
-        color: 'var(--color-error)',
-        padding: 'var(--space-md)',
-        borderRadius: 'var(--radius-md)',
-        marginBottom: 'var(--space-lg)',
+    stepHeader: {
         display: 'flex',
         alignItems: 'center',
-        gap: 'var(--space-sm)'
+        gap: '15px',
+        marginBottom: '10px'
+    },
+    backBtn: {
+        background: 'var(--color-bg-light)',
+        border: 'none',
+        color: 'var(--color-text-primary)',
+        width: '40px',
+        height: '40px',
+        borderRadius: '12px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer'
+    },
+    title: {
+        fontSize: '22px',
+        fontWeight: 800,
+        margin: 0,
+        color: 'var(--color-text-primary)'
+    },
+    subtitle: {
+        color: 'var(--color-text-tertiary)',
+        fontSize: '14px',
+        marginBottom: '25px'
+    },
+    grid: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px'
+    },
+    navItem: {
+        display: 'flex',
+        alignItems: 'center',
+        padding: '16px',
+        background: 'var(--color-bg-light)',
+        border: '1px solid var(--color-border)',
+        borderRadius: '16px',
+        cursor: 'pointer',
+        textAlign: 'left',
+        transition: 'all 0.2s ease',
+        width: '100%',
+        gap: '15px'
+    },
+    navIcon: {
+        width: '44px',
+        height: '44px',
+        background: 'var(--color-bg-medium)',
+        borderRadius: '12px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--color-primary-light)',
+        fontSize: '20px'
+    },
+    navText: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column'
+    },
+    navName: {
+        fontWeight: 700,
+        fontSize: '16px',
+        color: 'var(--color-text-primary)'
+    },
+    navMeta: {
+        fontSize: '12px',
+        color: 'var(--color-text-tertiary)'
+    },
+    navArrow: {
+        color: 'var(--color-text-tertiary)',
+        opacity: 0.5
+    },
+    selectionSummary: {
+        background: 'rgba(225, 29, 72, 0.1)',
+        padding: '12px 16px',
+        borderRadius: '12px',
+        marginBottom: '25px',
+        fontSize: '14px',
+        fontWeight: 600,
+        color: 'var(--color-primary-light)',
+        border: '1px dashed var(--color-primary)'
+    },
+    form: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px'
+    },
+    textarea: {
+        borderRadius: '16px',
+        padding: '15px',
+        resize: 'none',
+        background: 'var(--color-bg-light)',
+        border: '1px solid var(--color-border)',
+        color: 'var(--color-text-primary)',
+        width: '100%',
+        boxSizing: 'border-box'
+    },
+    input: {
+        borderRadius: '12px',
+        background: 'var(--color-bg-light)',
+        border: '1px solid var(--color-border)',
+        color: 'var(--color-text-primary)',
+        padding: '12px'
+    },
+    photoSection: {
+        marginBottom: '10px'
+    },
+    photoUpload: {
+        display: 'block',
+        cursor: 'pointer'
+    },
+    photoPlaceholder: {
+        border: '2px dashed var(--color-border)',
+        borderRadius: '16px',
+        padding: '20px',
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '10px',
+        color: 'var(--color-text-tertiary)',
+        transition: 'all 0.2s ease'
+    },
+    previewImage: {
+        width: '100%',
+        borderRadius: '16px',
+        maxHeight: '200px',
+        objectFit: 'cover'
+    },
+    submitBtn: {
+        padding: '18px',
+        borderRadius: '16px',
+        fontWeight: 800,
+        fontSize: '16px',
+        boxShadow: '0 10px 20px rgba(225, 29, 72, 0.3)',
+        marginTop: '10px'
+    },
+    errorBox: {
+        marginTop: '20px',
+        padding: '12px',
+        background: 'rgba(225, 29, 72, 0.1)',
+        color: 'var(--color-error)',
+        borderRadius: '10px',
+        fontSize: '13px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
     },
     success: {
         textAlign: 'center',
-        padding: 'var(--space-2xl) 0'
-    },
-    error: {
-        textAlign: 'center',
-        padding: 'var(--space-2xl) 0'
+        padding: '20px 0'
     }
 };
 

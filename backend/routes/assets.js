@@ -43,24 +43,40 @@ router.get('/', authMiddleware, async (req, res) => {
     }
 });
 
-// Lookup asset by QR code (for scanner navigation) - must be before /:id route
+// Lookup entity by QR code (for scanner navigation)
 router.get('/lookup/qr/:qrCode', authMiddleware, async (req, res) => {
     try {
         const { qrCode } = req.params;
 
+        // 1. Check assets
         const [assets] = await pool.query(
             'SELECT id, inventory_number, type, model FROM assets WHERE qr_code = ?',
             [qrCode]
         );
 
-        if (assets.length === 0) {
-            return res.status(404).json({ error: 'Gerät nicht gefunden' });
+        if (assets.length > 0) {
+            return res.json({ ...assets[0], entityType: 'asset' });
         }
 
-        res.json(assets[0]);
+        // 2. Check containers (including rooms)
+        const [containers] = await pool.query(
+            'SELECT id, name, type FROM containers WHERE qr_code = ?',
+            [qrCode]
+        );
+
+        if (containers.length > 0) {
+            return res.json({
+                id: containers[0].id,
+                name: containers[0].name,
+                type: containers[0].type,
+                entityType: 'container'
+            });
+        }
+
+        res.status(404).json({ error: 'Nichts unter diesem QR-Code gefunden' });
     } catch (error) {
-        console.error('Lookup asset by QR error:', error);
-        res.status(500).json({ error: 'Serverfehler beim Suchen des Geräts' });
+        console.error('Lookup QR error:', error);
+        res.status(500).json({ error: 'Serverfehler beim Suchen des QR-Codes' });
     }
 });
 

@@ -66,6 +66,45 @@ router.get('/', authMiddleware, async (req, res) => {
     }
 });
 
+// PUBLIC: Get all rooms (NO AUTH REQUIRED)
+router.get('/public/rooms', async (req, res) => {
+    try {
+        const [rooms] = await pool.query("SELECT id, name, building, floor FROM containers WHERE type = 'raum' ORDER BY name");
+        res.json(rooms);
+    } catch (error) {
+        console.error('Get public rooms error:', error);
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// PUBLIC: Get containers in a room (NO AUTH REQUIRED)
+router.get('/public/containers/room/:roomId', async (req, res) => {
+    try {
+        const [containers] = await pool.query(
+            "SELECT id, name, type, location FROM containers WHERE parent_container_id = ? AND type != 'raum' ORDER BY name",
+            [req.params.roomId]
+        );
+        res.json(containers);
+    } catch (error) {
+        console.error('Get public containers error:', error);
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// PUBLIC: Get assets in a container (NO AUTH REQUIRED)
+router.get('/public/assets/container/:containerId', async (req, res) => {
+    try {
+        const [assets] = await pool.query(
+            "SELECT id, inventory_number, type, model FROM assets WHERE container_id = ? ORDER BY inventory_number",
+            [req.params.containerId]
+        );
+        res.json(assets);
+    } catch (error) {
+        console.error('Get public assets error:', error);
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
 // PUBLIC: Get asset/container info by QR code (NO AUTH REQUIRED)
 router.get('/public/:qr_code', async (req, res) => {
     try {
@@ -126,17 +165,21 @@ router.get('/public/:qr_code', async (req, res) => {
 // PUBLIC: Submit error report (NO AUTH REQUIRED)
 router.post('/public', upload.single('photo'), async (req, res) => {
     try {
-        const { qr_code, description, reporter_name, reporter_email, selected_asset_id } = req.body;
+        const { qr_code, description, reporter_name, reporter_email, selected_asset_id, container_id: body_container_id } = req.body;
 
-        if (!qr_code || !description) {
-            return res.status(400).json({ error: 'QR-Code und Beschreibung sind erforderlich' });
+        if (!description) {
+            return res.status(400).json({ error: 'Beschreibung ist erforderlich' });
         }
 
         let asset_id = selected_asset_id || null;
-        let container_id = null;
+        let container_id = body_container_id || null;
 
-        // Find what the QR code belongs to
-        if (!asset_id) {
+        // Find what the report belongs to if no IDs are directly provided
+        if (!asset_id && !container_id) {
+            if (!qr_code) {
+                return res.status(400).json({ error: 'QR-Code oder Zuordnung erforderlich' });
+            }
+
             const [assets] = await pool.query('SELECT id FROM assets WHERE qr_code = ?', [qr_code]);
 
             if (assets.length > 0) {
@@ -147,7 +190,7 @@ router.post('/public', upload.single('photo'), async (req, res) => {
                 if (containers.length > 0) {
                     container_id = containers[0].id;
                 } else {
-                    return res.status(404).json({ error: 'QR-Code nicht gefunden' });
+                    return res.status(404).json({ error: 'Zuordnung nicht gefunden' });
                 }
             }
         }

@@ -3,6 +3,8 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { authMiddleware, requireRole, requirePermission } = require('../middleware/auth');
 const PDFDocument = require('pdfkit');
+const path = require('path');
+const fs = require('fs');
 const { generateQRCodeBuffer } = require('../utils/qrcode');
 
 // --- Device Models ---
@@ -246,42 +248,74 @@ router.delete('/roles/:id', authMiddleware, requirePermission('roles.manage'), a
 });
 
 // --- QR-Code PDF Export ---
-router.get('/export/qr-pdf/:containerId', authMiddleware, requirePermission('assets.view'), async (req, res) => {
+router.get('/export/qr-pdf/:id', authMiddleware, requirePermission('assets.view'), async (req, res) => {
     try {
-        const { containerId } = req.params;
+        const { id } = req.params;
+        const { type } = req.query; // 'asset' or undefined (defaults to container batch)
+
+        let items = [];
+        let title = '';
+
+        // Fetch Org Name & Logo from settings
+        let orgName = 'MZ-MANAGER';
+        let logoPath = null;
+        try {
+            const [settingsRows] = await pool.query('SELECT * FROM settings');
+            settingsRows.forEach(row => {
+                if (row.setting_key === 'org_name') orgName = row.setting_value;
+                if (row.setting_key === 'logo_path') logoPath = row.setting_value;
+            });
+        } catch (sError) {
+            console.warn('Settings table missing or error');
+        }
+
+        if (type === 'asset') {
+            // SINGLE ASSET EXPORT
+            const [assetRows] = await pool.query('SELECT * FROM assets WHERE id = ?', [id]);
+            if (assetRows.length === 0) return res.status(404).json({ error: 'Asset nicht gefunden' });
+            const asset = assetRows[0];
+            items = [{ label: asset.inventory_number, sublabel: asset.model || asset.type, qr_code: asset.qr_code }];
+            title = `Export: ${asset.inventory_number}`;
+        } else {
+            // CONTAINER BATCH EXPORT
+            const [containerRows] = await pool.query('SELECT * FROM containers WHERE id = ?', [id]);
+            if (containerRows.length === 0) return res.status(404).json({ error: 'Container nicht gefunden' });
+            const container = containerRows[0];
+            const typeLabel = container.type === 'raum' ? 'Raum' : 'Container';
+
+            // Get assets in this container
+            const [assets] = await pool.query('SELECT * FROM assets WHERE container_id = ? ORDER BY inventory_number', [id]);
+
+            items = [
+                { label: container.name, sublabel: typeLabel, qr_code: container.qr_code },
+                ...assets.map(a => ({ label: a.inventory_number, sublabel: a.model || a.type, qr_code: a.qr_code }))
+            ];
+            title = `QR-Codes: ${typeLabel} ${container.name}`;
+        }
+
         const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
 
-        // 1. Get container info
-        const [containers] = await pool.query('SELECT * FROM containers WHERE id = ?', [containerId]);
-        if (containers.length === 0) return res.status(404).json({ error: 'Container nicht gefunden' });
-        const container = containers[0];
-
-        // 2. Get assets in this container
-        const [assets] = await pool.query('SELECT * FROM assets WHERE container_id = ? ORDER BY inventory_number', [containerId]);
-
         // 3. Create PDF
-        const doc = new PDFDocument({ margin: 50 });
-        const filename = `QR_Codes_${container.name.replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, '_')}.pdf`;
+        const doc = new PDFDocument({ margin: 30, size: 'A4' });
+        const cleanTitle = title.replace(/[^\x00-\x7F]/g, "").replace(/\s+/g, '_');
+        const filename = `${cleanTitle}.pdf`;
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         doc.pipe(res);
 
-        // Header
-        doc.fontSize(20).text(`QR-Codes: ${container.name}`, { align: 'center' });
-        doc.moveDown();
+        // Header (only on first page)
+        doc.fontSize(16).font('Helvetica-Bold').text(title, { align: 'center' });
+        doc.moveDown(0.5);
 
-        // Items list
-        const items = [
-            { label: `Container: ${container.name}`, qr_code: container.qr_code },
-            ...assets.map(a => ({ label: `${a.inventory_number} - ${a.model || a.type}`, qr_code: a.qr_code }))
-        ];
-
-        // Grid settings (3x5 labels per page usually works well for labels)
-        const itemsPerPage = 8; // 2x4 grid for readability
-        const qrSize = 140;
-        const spacingX = 260;
-        const spacingY = 180;
+        // Grid settings (Reverting to 3 columns with balanced wide aspect ratio)
+        // A4 width (595pt) - margins (2 * 30) = 535pt.
+        const itemsPerPage = 18;
+        const colWidth = 175;  // 3 columns
+        const rowHeight = 105; // Balanced landscape (175/105 = 1.66 ratio)
+        const qrSize = 65;    // Large and clear
+        const logoSize = 25;
+        const textStartX = 75; // Space for QR
 
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
@@ -291,22 +325,47 @@ router.get('/export/qr-pdf/:containerId', authMiddleware, requirePermission('ass
                 doc.addPage();
             }
 
-            const col = relativeIndex % 2;
-            const row = Math.floor(relativeIndex / 2);
+            const col = relativeIndex % 3;
+            const row = Math.floor(relativeIndex / 3);
 
-            const x = 60 + col * spacingX;
-            const y = 80 + row * spacingY;
+            const x = 35 + col * colWidth;
+            const y = 80 + row * rowHeight;
 
             // Generate QR Code Buffer
             const qrBuffer = await generateQRCodeBuffer(item.qr_code, baseUrl);
 
-            // Add to PDF
-            doc.image(qrBuffer, x, y, { width: qrSize });
-            doc.fontSize(9).font('Helvetica-Bold').text(item.label, x, y + qrSize + 5, { width: qrSize, align: 'center' });
-            doc.fontSize(7).font('Helvetica').text(item.qr_code, x, y + qrSize + 18, { width: qrSize, align: 'center' });
+            // Draw Label background/border
+            doc.rect(x, y, colWidth - 8, rowHeight - 8).lineWidth(0.1).strokeColor('#cccccc').stroke();
 
-            // Subtle border for cutting
-            doc.rect(x - 5, y - 5, qrSize + 10, qrSize + 35).lineWidth(0.2).strokeColor('#cccccc').stroke();
+            // Add QR to PDF
+            doc.image(qrBuffer, x + 5, y + 8, { width: qrSize });
+
+            // Right side info
+            const infoX = x + textStartX;
+
+            // Branding: MZ MANAGER (Larger)
+            doc.fontSize(14).font('Helvetica-Bold').fillColor('#e11d48').text('MZ', infoX, y + 6);
+            doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000').text('MANAGER', infoX, y + 20);
+
+            // Optional Logo (shifted right if present)
+            if (logoPath) {
+                const fullLogoPath = path.join(__dirname, '..', 'uploads', logoPath);
+                if (fs.existsSync(fullLogoPath)) {
+                    doc.image(fullLogoPath, infoX + 65, y + 6, { width: logoSize + 5 });
+                }
+            }
+
+            // Separator line
+            doc.moveTo(infoX, y + 36).lineTo(x + colWidth - 15, y + 36).lineWidth(0.5).strokeColor('#e11d48').stroke();
+
+            // Item Name
+            doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000').text(item.label, infoX, y + 42, { width: colWidth - textStartX - 15 });
+
+            // Item Type/Model
+            doc.fontSize(7).font('Helvetica').fillColor('#444444').text(item.sublabel, infoX, y + 54, { width: colWidth - textStartX - 15 });
+
+            // QR-ID (Bottom right)
+            doc.fontSize(6).font('Helvetica').fillColor('#888888').text(item.qr_code, infoX, y + rowHeight - 22);
         }
 
         doc.end();
@@ -315,6 +374,23 @@ router.get('/export/qr-pdf/:containerId', authMiddleware, requirePermission('ass
         if (!res.headersSent) {
             res.status(500).json({ error: 'Fehler beim Generieren des PDFs' });
         }
+    }
+});
+
+// --- Activity Logs ---
+router.get('/logs', authMiddleware, requirePermission('logs.view'), async (req, res) => {
+    try {
+        const [logs] = await pool.query(`
+            SELECT l.*, u.username as user
+            FROM activity_logs l
+            LEFT JOIN users u ON l.user_id = u.id
+            ORDER BY l.timestamp DESC
+            LIMIT 100
+        `);
+        res.json(logs);
+    } catch (error) {
+        console.error('Get logs error:', error);
+        res.status(500).json({ error: 'Serverfehler beim Laden der Logs' });
     }
 });
 

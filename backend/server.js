@@ -16,6 +16,7 @@ const containerRoutes = require('./routes/containers');
 const lendingRoutes = require('./routes/lendings');
 const errorRoutes = require('./routes/errors');
 const dashboardRoutes = require('./routes/dashboard');
+const settingsRoutes = require('./routes/settings');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,23 +43,7 @@ app.use('/api/containers', containerRoutes);
 app.use('/api/lendings', lendingRoutes);
 app.use('/api/errors', errorRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-
-// Logs route for frontend
-app.get('/api/logs', authMiddleware, async (req, res) => {
-    try {
-        const [logs] = await require('./config/database').pool.query(`
-            SELECT l.*, u.username as user
-            FROM activity_logs l
-            LEFT JOIN users u ON l.user_id = u.id
-            ORDER BY l.timestamp DESC
-            LIMIT 100
-        `);
-        res.json(logs);
-    } catch (error) {
-        console.error('Get logs error:', error);
-        res.status(500).json({ error: 'Serverfehler beim Laden der Logs' });
-    }
-});
+app.use('/api/settings', settingsRoutes);
 
 // 404 handler
 app.use((req, res) => {

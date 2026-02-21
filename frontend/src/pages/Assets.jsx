@@ -165,15 +165,23 @@ function Assets() {
     const handleQRScan = async (qrCode) => {
         try {
             const response = await assetsAPI.lookupByQR(qrCode);
-            if (response.data && response.data.id) {
-                success(`Gerät gefunden: ${response.data.inventory_number}`);
-                navigate(`/assets/${response.data.id}`);
+            const data = response.data;
+
+            if (data && data.id) {
+                if (data.entityType === 'asset') {
+                    success(`Gerät gefunden: ${data.inventory_number}`);
+                    navigate(`/assets/${data.id}`);
+                } else if (data.entityType === 'container') {
+                    const typeLabel = data.type === 'raum' ? 'Raum' : 'Container';
+                    success(`${typeLabel} gefunden: ${data.name}`);
+                    navigate(`/containers/${data.id}`);
+                }
             }
         } catch (err) {
             if (err.response?.status === 404) {
-                error('QR-Code gehört zu keinem bekannten Gerät');
+                error('QR-Code gehört zu keinem bekannten Objekt (Gerät, Raum oder Container)');
             } else {
-                error('Fehler beim Suchen des Geräts');
+                error('Fehler beim Suchen des QR-Codes');
             }
             setShowScanner(false);
         }

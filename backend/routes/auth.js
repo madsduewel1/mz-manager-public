@@ -16,7 +16,7 @@ router.post('/login', async (req, res) => {
         }
 
         const [users] = await pool.query(`
-            SELECT u.*, GROUP_CONCAT(r.name) as roles_list
+            SELECT u.*, GROUP_CONCAT(DISTINCT r.name) as roles_list
             FROM users u
             LEFT JOIN user_roles ur ON u.id = ur.user_id
             LEFT JOIN roles r ON ur.role_id = r.id
@@ -86,8 +86,10 @@ router.post('/login', async (req, res) => {
                 permissions,
                 first_name: user.first_name,
                 last_name: user.last_name,
-                requires_password_change: !!user.requires_password_change,
-                is_active: !!user.is_active
+                requires_password_change: false,
+                has_seen_onboarding: true,
+                is_active: !!user.is_active,
+                theme: user.theme || 'light'
             }
         });
     } catch (error) {
@@ -121,9 +123,9 @@ router.post('/register', authMiddleware, async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        // Create user
+        // Create user with mandatory password change
         const [result] = await connection.execute(
-            'INSERT INTO users (username, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO users (username, email, password_hash, first_name, last_name, requires_password_change) VALUES (?, ?, ?, ?, ?, 0)',
             [username, email, hashedPassword, first_name || null, last_name || null]
         );
         const userId = result.insertId;
@@ -162,8 +164,8 @@ router.get('/me', authMiddleware, async (req, res) => {
     try {
         const [users] = await pool.query(`
             SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.created_at,
-                   u.requires_password_change, u.is_active,
-                   GROUP_CONCAT(ur.role_name) as roles_list
+                   u.requires_password_change, u.has_seen_onboarding, u.is_active, u.theme,
+                   GROUP_CONCAT(DISTINCT ur.role_name) as roles_list
             FROM users u
             LEFT JOIN user_roles ur ON u.id = ur.user_id
             WHERE u.id = ?
@@ -175,12 +177,43 @@ router.get('/me', authMiddleware, async (req, res) => {
         const user = users[0];
         const roles = user.roles_list ? user.roles_list.split(',') : [];
 
+        // Load permissions
+        let permissions = [];
+        try {
+            if (roles.length > 0) {
+                const [permRows] = await pool.query(`
+                    SELECT DISTINCT rp.permission
+                    FROM role_permissions rp
+                    JOIN roles r ON rp.role_id = r.id
+                    WHERE r.name IN (?)
+                `, [roles]);
+                permissions = [...permissions, ...permRows.map(p => p.permission)];
+            }
+
+            const [userPermRows] = await pool.query(`
+                SELECT permission FROM user_permissions WHERE user_id = ?
+            `, [user.id]);
+            permissions = [...permissions, ...userPermRows.map(p => p.permission)];
+
+            permissions = [...new Set(permissions)];
+        } catch (e) {
+            console.log('Permissions load error in /me:', e.message);
+        }
+
         res.json({
-            ...user,
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            created_at: user.created_at,
+            requires_password_change: !!user.requires_password_change,
+            has_seen_onboarding: !!user.has_seen_onboarding,
+            is_active: !!user.is_active,
+            theme: user.theme || 'light',
             role: roles[0] || 'Lehrer',
             roles,
-            requires_password_change: !!user.requires_password_change,
-            is_active: !!user.is_active
+            permissions
         });
     } catch (error) {
         console.error('Get user error:', error);
@@ -188,12 +221,22 @@ router.get('/me', authMiddleware, async (req, res) => {
     }
 });
 
-// Change password (internal onboarding)
-router.post('/change-password', authMiddleware, async (req, res) => {
+// Change password (profile)
+router.put('/change-password', authMiddleware, async (req, res) => {
     try {
-        const { newPassword } = req.body;
+        const { oldPassword, newPassword } = req.body;
+
         if (!newPassword || newPassword.length < 6) {
-            return res.status(400).json({ error: 'Das Passwort muss mindestens 6 Zeichen lang sein' });
+            return res.status(400).json({ error: 'Das neue Passwort muss mindestens 6 Zeichen lang sein' });
+        }
+
+        // Verify old password
+        const [users] = await pool.query('SELECT password_hash FROM users WHERE id = ?', [req.user.id]);
+        if (users.length === 0) return res.status(404).json({ error: 'Benutzer nicht gefunden' });
+
+        const isMatch = await bcrypt.compare(oldPassword, users[0].password_hash);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Das alte Passwort ist nicht korrekt' });
         }
 
         const password_hash = await bcrypt.hash(newPassword, 10);
@@ -207,6 +250,39 @@ router.post('/change-password', authMiddleware, async (req, res) => {
         res.json({ message: 'Passwort erfolgreich geändert' });
     } catch (error) {
         console.error('Change password error:', error);
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// Mark onboarding as complete
+router.post('/onboarding-complete', authMiddleware, async (req, res) => {
+    try {
+        await pool.query(
+            'UPDATE users SET has_seen_onboarding = 1 WHERE id = ?',
+            [req.user.id]
+        );
+        res.json({ message: 'Onboarding abgeschlossen' });
+    } catch (error) {
+        console.error('Onboarding complete error:', error);
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// Update user theme
+router.post('/update-theme', authMiddleware, async (req, res) => {
+    try {
+        const { theme } = req.body;
+        if (!['light', 'dark'].includes(theme)) {
+            return res.status(400).json({ error: 'Ungültiges Theme' });
+        }
+
+        await pool.query(
+            'UPDATE users SET theme = ? WHERE id = ?',
+            [theme, req.user.id]
+        );
+        res.json({ message: 'Theme aktualisiert' });
+    } catch (error) {
+        console.error('Update theme error:', error);
         res.status(500).json({ error: 'Serverfehler' });
     }
 });

@@ -41,6 +41,8 @@ sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "UPDATE roles SET is_system = F
 # 2. Fehlende Spalten in 'users' sicher ergänzen (falls sie fehlen)
 sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;" 2>/dev/null || true
 sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS requires_password_change BOOLEAN DEFAULT FALSE;" 2>/dev/null || true
+sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_seen_onboarding BOOLEAN DEFAULT FALSE;" 2>/dev/null || true
+sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS theme ENUM('light', 'dark') DEFAULT 'light';" 2>/dev/null || true
 
 # 3. Schema-Struktur sicherstellen (CREATE TABLE IF NOT EXISTS)
 sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < database/schema.sql
