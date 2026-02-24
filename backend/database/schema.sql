@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS lendings (
     container_id INT NULL,
     user_id INT NOT NULL,
     borrower_name VARCHAR(100),
-    borrower_type ENUM('Lehrer', 'klasse', 'projektgruppe', 'sonstiges') NOT NULL,
+    borrower_type ENUM('Lehrer', 'klasse', 'projektgruppe', 'Schüler', 'extern', 'sonstiges') NOT NULL,
     start_date DATETIME NOT NULL,
     planned_end_date DATETIME NOT NULL,
     actual_end_date DATETIME NULL,

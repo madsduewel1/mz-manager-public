@@ -17,7 +17,7 @@ router.get('/', authMiddleware, requirePermission('users.manage'), async (req, r
             LEFT JOIN user_roles ur ON u.id = ur.user_id
             LEFT JOIN roles r ON ur.role_id = r.id
             LEFT JOIN user_permissions up ON u.id = up.user_id
-            GROUP BY u.id
+            GROUP BY u.id, u.username, u.email, u.first_name, u.last_name, u.created_at, u.is_active, u.theme
             ORDER BY u.username ASC
         `);
 

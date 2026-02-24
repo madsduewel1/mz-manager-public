@@ -44,7 +44,10 @@ sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN I
 sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_seen_onboarding BOOLEAN DEFAULT FALSE;" 2>/dev/null || true
 sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS theme ENUM('light', 'dark') DEFAULT 'light';" 2>/dev/null || true
 
-# 3. Schema-Struktur sicherstellen (CREATE TABLE IF NOT EXISTS)
+# 3. ENUM für Ausleihentypen in der bestehenden Datenbank erweitern
+sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE lendings MODIFY COLUMN borrower_type ENUM('Lehrer', 'klasse', 'projektgruppe', 'Schüler', 'extern', 'sonstiges') NOT NULL;" 2>/dev/null || true
+
+# 4. Schema-Struktur sicherstellen (CREATE TABLE IF NOT EXISTS)
 sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < database/schema.sql
 
 # Frontend Update und Build
