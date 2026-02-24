@@ -723,26 +723,26 @@ function Admin() {
 
                                 <div className="grid grid-4 grid-mobile-2 mb-xl">
                                     {hasPermission('users.manage') && (
-                                        <div className="stat-card">
-                                            <div className="stat-value" style={{ color: 'var(--color-primary)' }}>{users.length}</div>
+                                        <div className="stat-card" style={{ borderLeft: '4px solid var(--color-text-tertiary)' }}>
+                                            <div className="stat-value" style={{ color: 'var(--color-text-primary)' }}>{users.length}</div>
                                             <div className="stat-label">Benutzer</div>
                                         </div>
                                     )}
                                     {hasPermission('models.manage', 'assets.view') && (
-                                        <div className="stat-card">
-                                            <div className="stat-value" style={{ color: 'var(--color-info)' }}>{deviceModels.length}</div>
+                                        <div className="stat-card" style={{ borderLeft: '4px solid var(--color-text-tertiary)' }}>
+                                            <div className="stat-value" style={{ color: 'var(--color-text-primary)' }}>{deviceModels.length}</div>
                                             <div className="stat-label">Modelle</div>
                                         </div>
                                     )}
                                     {hasPermission('rooms.manage', 'containers.manage') && (
-                                        <div className="stat-card">
-                                            <div className="stat-value" style={{ color: 'var(--color-warning)' }}>{rooms.length}</div>
+                                        <div className="stat-card" style={{ borderLeft: '4px solid var(--color-text-tertiary)' }}>
+                                            <div className="stat-value" style={{ color: 'var(--color-text-primary)' }}>{rooms.length}</div>
                                             <div className="stat-label">Räume</div>
                                         </div>
                                     )}
                                     {hasRole('Administrator') && (
-                                        <div className="stat-card">
-                                            <div className="stat-value" style={{ color: 'var(--color-success)' }}>{roles.length}</div>
+                                        <div className="stat-card" style={{ borderLeft: '4px solid var(--color-text-tertiary)' }}>
+                                            <div className="stat-value" style={{ color: 'var(--color-text-primary)' }}>{roles.length}</div>
                                             <div className="stat-label">Rollen</div>
                                         </div>
                                     )}

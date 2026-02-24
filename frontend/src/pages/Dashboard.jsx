@@ -59,8 +59,8 @@ function Dashboard() {
             {/* Warning for users with no permissions */}
             {!hasAnyPermissions() && (
                 <div style={{
-                    background: 'hsla(38, 92%, 50%, 0.1)',
-                    border: '1px solid hsla(38, 92%, 50%, 0.3)',
+                    background: 'var(--color-bg-light)',
+                    border: '1px solid var(--color-border)',
                     borderRadius: 'var(--radius-lg)',
                     padding: 'var(--space-xl)',
                     marginBottom: 'var(--space-xl)',
@@ -68,9 +68,9 @@ function Dashboard() {
                     alignItems: 'center',
                     gap: 'var(--space-lg)'
                 }}>
-                    <FiAlertCircle size={32} color="hsl(38, 92%, 50%)" style={{ flexShrink: 0 }} />
+                    <FiAlertCircle size={32} color="var(--color-text-secondary)" style={{ flexShrink: 0 }} />
                     <div>
-                        <h3 style={{ margin: '0 0 4px', color: 'hsl(38, 92%, 50%)' }}>Kein Zugriff konfiguriert</h3>
+                        <h3 style={{ margin: '0 0 4px', color: 'var(--color-text-primary)' }}>Kein Zugriff konfiguriert</h3>
                         <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
                             Der MZ-Manager muss von einem Administrator konfiguriert werden damit du ihn nutzen kannst.
                         </p>
@@ -81,30 +81,30 @@ function Dashboard() {
             {/* Statistics Grid - Only for Admins */}
             {hasRole('Administrator') && (
                 <div className="grid grid-4 grid-mobile-1 mb-xl">
-                    <div className="stat-card" style={{ borderTop: '4px solid var(--color-error)' }}>
+                    <div className="stat-card" style={{ borderLeft: '4px solid var(--color-text-tertiary)' }}>
                         <div className="stat-label">Defekte Geräte</div>
-                        <div className="stat-value" style={{ color: 'var(--color-error)' }}>
+                        <div className="stat-value" style={{ color: 'var(--color-text-primary)' }}>
                             {stats.statistics.defective_assets}
                         </div>
                     </div>
 
-                    <div className="stat-card" style={{ borderTop: '4px solid var(--color-warning)' }}>
+                    <div className="stat-card" style={{ borderLeft: '4px solid var(--color-text-tertiary)' }}>
                         <div className="stat-label">Überfällige Ausleihen</div>
-                        <div className="stat-value" style={{ color: 'var(--color-warning)' }}>
+                        <div className="stat-value" style={{ color: 'var(--color-text-primary)' }}>
                             {stats.statistics.overdue_lendings}
                         </div>
                     </div>
 
-                    <div className="stat-card" style={{ borderTop: '4px solid var(--color-success)' }}>
+                    <div className="stat-card" style={{ borderLeft: '4px solid var(--color-text-tertiary)' }}>
                         <div className="stat-label">Container</div>
-                        <div className="stat-value" style={{ color: 'var(--color-success)' }}>
+                        <div className="stat-value" style={{ color: 'var(--color-text-primary)' }}>
                             {stats.statistics.total_containers}
                         </div>
                     </div>
 
-                    <div className="stat-card" style={{ borderTop: '4px solid var(--color-info)' }}>
+                    <div className="stat-card" style={{ borderLeft: '4px solid var(--color-text-tertiary)' }}>
                         <div className="stat-label">Gesamt Geräte</div>
-                        <div className="stat-value" style={{ color: 'var(--color-info)' }}>
+                        <div className="stat-value" style={{ color: 'var(--color-text-primary)' }}>
                             {stats.statistics.total_assets}
                         </div>
                     </div>
@@ -136,7 +136,7 @@ function Dashboard() {
                                                 <strong>{error.inventory_number || 'Container'}</strong>
                                                 <p className="text-small text-muted">{error.description.substring(0, 60)}...</p>
                                             </div>
-                                            <span className="badge badge-defekt">Offen</span>
+                                            <span className="badge badge-info">Offen</span>
                                         </div>
                                     ))}
                                 </div>
