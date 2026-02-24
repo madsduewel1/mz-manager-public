@@ -86,8 +86,8 @@ router.post('/login', async (req, res) => {
                 permissions,
                 first_name: user.first_name,
                 last_name: user.last_name,
-                requires_password_change: false,
-                has_seen_onboarding: true,
+                requires_password_change: !!user.requires_password_change,
+                has_seen_onboarding: !!user.has_seen_onboarding,
                 is_active: !!user.is_active,
                 theme: user.theme || 'light'
             }
@@ -125,7 +125,7 @@ router.post('/register', authMiddleware, async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         // Create user with mandatory password change
         const [result] = await connection.execute(
-            'INSERT INTO users (username, email, password_hash, first_name, last_name, requires_password_change) VALUES (?, ?, ?, ?, ?, 0)',
+            'INSERT INTO users (username, email, password_hash, first_name, last_name, requires_password_change) VALUES (?, ?, ?, ?, ?, 1)',
             [username, email, hashedPassword, first_name || null, last_name || null]
         );
         const userId = result.insertId;

@@ -1,31 +1,58 @@
-import { useState } from 'react';
-import { FiInfo, FiArrowRight, FiArrowLeft, FiCheck } from 'react-icons/fi';
+import { useState, useMemo } from 'react';
+import { FiInfo, FiArrowRight, FiArrowLeft, FiCheck, FiSettings, FiMonitor, FiRepeat, FiAlertCircle } from 'react-icons/fi';
 
-const STEPS = [
-    {
-        title: 'Willkommen beim MZ-Manager',
-        content: 'Hier finden Sie eine Übersicht über Ihre Geräte und deren Status. In dieser kurzen Einführung zeigen wir Ihnen die wichtigsten Funktionen.',
-        icon: <FiInfo size={32} color="var(--color-primary)" />
-    },
-    {
-        title: 'Geräte verwalten',
-        content: 'Unter "Geräte" sehen Sie alle verfügbaren Medienelemente. Sie können nach Typ, Standort oder Status filtern.',
-        icon: <FiInfo size={32} color="var(--color-primary)" />
-    },
-    {
-        title: 'Ausleihen im Blick',
-        content: 'Der Bereich "Ausleihen" zeigt Ihnen, wer welches Gerät gerade nutzt und wann es voraussichtlich zurückgegeben wird.',
-        icon: <FiInfo size={32} color="var(--color-primary)" />
-    },
-    {
-        title: 'Fehler melden',
-        content: 'Sollte ein Gerät defekt sein, können Sie unter "Fehlermeldungen" einen Bericht erstellen, damit sich die Technik darum kümmert.',
-        icon: <FiInfo size={32} color="var(--color-primary)" />
-    }
-];
-
-function Onboarding({ onComplete }) {
+function Onboarding({ user, onComplete }) {
     const [currentStep, setCurrentStep] = useState(0);
+
+    const STEPS = useMemo(() => {
+        const perms = user?.permissions || [];
+        const hasAssetPerm = perms.includes('assets.view') || perms.includes('assets.manage') || perms.includes('all');
+        const hasLendingPerm = perms.includes('lendings.view') || perms.includes('lendings.create') || perms.includes('lendings.manage') || perms.includes('all');
+        const hasErrorPerm = perms.includes('errors.create') || perms.includes('errors.manage') || perms.includes('all');
+        const hasAdminPerm = perms.includes('users.manage') || perms.includes('roles.manage') || perms.includes('all');
+
+        const steps = [
+            {
+                title: 'Willkommen beim MZ-Manager',
+                content: 'Hier finden Sie eine Übersicht über Ihre Geräte und deren Status. In dieser kurzen Einführung zeigen wir Ihnen die wichtigsten Funktionen.',
+                icon: <FiInfo size={32} color="var(--color-primary)" />
+            }
+        ];
+
+        if (hasAssetPerm) {
+            steps.push({
+                title: 'Geräte verwalten',
+                content: 'Unter "Geräte" sehen Sie alle verfügbaren Medienelemente. Sie können nach Typ, Standort oder Status filtern.',
+                icon: <FiMonitor size={32} color="var(--color-primary)" />
+            });
+        }
+
+        if (hasLendingPerm) {
+            steps.push({
+                title: 'Ausleihen im Blick',
+                content: 'Der Bereich "Ausleihen" zeigt Ihnen, wer welches Gerät gerade nutzt und wann es voraussichtlich zurückgegeben wird.',
+                icon: <FiRepeat size={32} color="var(--color-primary)" />
+            });
+        }
+
+        if (hasErrorPerm) {
+            steps.push({
+                title: 'Fehler melden',
+                content: 'Sollte ein Gerät defekt sein, können Sie unter "Fehlermeldungen" einen Bericht erstellen, damit sich die Technik darum kümmert.',
+                icon: <FiAlertCircle size={32} color="var(--color-primary)" />
+            });
+        }
+
+        if (hasAdminPerm) {
+            steps.push({
+                title: 'Verwaltung',
+                content: 'Da Sie erweiterte Rechte haben, finden Sie im Bereich "Verwaltung" die Werkzeuge, um Benutzer, Rollen und neue Geräte anzulegen.',
+                icon: <FiSettings size={32} color="var(--color-primary)" />
+            });
+        }
+
+        return steps;
+    }, [user]);
 
     const handleNext = () => {
         if (currentStep < STEPS.length - 1) {

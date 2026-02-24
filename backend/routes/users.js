@@ -42,7 +42,7 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
         const { id } = req.params;
         const { username, email, roles, first_name, last_name, password, requires_password_change } = req.body;
 
-        let query = 'UPDATE users SET username = ?, email = ?, first_name = ?, last_name = ?';
+        let query = 'UPDATE users SET username = ?, email = ?, first_name = ?, last_name = ?, has_seen_onboarding = 0';
         let params = [username || '', email || '', first_name || '', last_name || ''];
 
         if (password) {
@@ -195,36 +195,55 @@ router.post('/:id/toggle-active', authMiddleware, requirePermission('users.manag
 
 // Add permission to user
 router.post('/:id/permissions', authMiddleware, requirePermission('users.manage'), async (req, res) => {
+    const connection = await pool.getConnection();
     try {
+        await connection.beginTransaction();
         const { id } = req.params;
         const { permission } = req.body;
 
-        if (!permission) return res.status(400).json({ error: 'Berechtigung erforderlich' });
+        if (!permission) {
+            await connection.rollback();
+            return res.status(400).json({ error: 'Berechtigung erforderlich' });
+        }
 
-        await pool.query(
+        await connection.query(
             'INSERT IGNORE INTO user_permissions (user_id, permission) VALUES (?, ?)',
             [id, permission]
         );
 
+        // Reset onboarding flag so the user sees instructions for their new permissions
+        await connection.query('UPDATE users SET has_seen_onboarding = 0 WHERE id = ?', [id]);
+
+        await connection.commit();
         res.json({ message: 'Berechtigung hinzugefügt' });
     } catch (error) {
+        await connection.rollback();
         console.error('Add permission error:', error);
         res.status(500).json({ error: 'Serverfehler' });
+    } finally {
+        connection.release();
     }
 });
 
 // Remove permission from user
 router.delete('/:id/permissions/:permission', authMiddleware, requirePermission('users.manage'), async (req, res) => {
+    const connection = await pool.getConnection();
     try {
+        await connection.beginTransaction();
         const { id, permission } = req.params;
 
-        await pool.query(
+        await connection.query(
             'DELETE FROM user_permissions WHERE user_id = ? AND permission = ?',
             [id, permission]
         );
 
+        // Reset onboarding flag as permissions changed
+        await connection.query('UPDATE users SET has_seen_onboarding = 0 WHERE id = ?', [id]);
+
+        await connection.commit();
         res.json({ message: 'Berechtigung entfernt' });
     } catch (error) {
+        await connection.rollback();
         console.error('Remove permission error:', error);
         res.status(500).json({ error: 'Serverfehler' });
     }

@@ -20,6 +20,7 @@ import Admin from './pages/Admin';
 import Sidebar from './components/Sidebar';
 import Breadcrumbs from './components/Breadcrumbs';
 import UserProfileModal from './components/UserProfileModal';
+import Onboarding from './components/Onboarding';
 import { getUser, setUser as setStoredUser } from './utils/auth';
 import { authAPI } from './services/api';
 
@@ -174,6 +175,15 @@ function App() {
                                             onClose={() => setShowProfileModal(false)}
                                             user={currentUser}
                                         />
+
+                                        {currentUser &&
+                                            !currentUser.has_seen_onboarding &&
+                                            !currentUser.requires_password_change && (
+                                                <Onboarding
+                                                    user={currentUser}
+                                                    onComplete={handleOnboardingComplete}
+                                                />
+                                            )}
                                     </div>
                                 </ProtectedRoute>
                             }

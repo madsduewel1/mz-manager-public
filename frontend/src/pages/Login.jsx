@@ -6,6 +6,9 @@ import { FiUser, FiLock, FiAlertCircle, FiMonitor, FiSun, FiMoon } from 'react-i
 function Login({ onLogin }) {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [requirePasswordChange, setRequirePasswordChange] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -37,10 +40,46 @@ function Login({ onLogin }) {
                 await authAPI.updateTheme(currentTheme);
             } catch (e) { console.error('Theme sync failed', e); }
 
-            if (onLogin) onLogin(response.data.user);
-            navigate('/');
+            if (response.data.user.requires_password_change) {
+                setRequirePasswordChange(true);
+            } else {
+                if (onLogin) onLogin(response.data.user);
+                navigate('/');
+            }
         } catch (err) {
             setError(err.response?.data?.error || 'Anmeldung fehlgeschlagen');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePasswordChangeSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        if (newPassword !== confirmPassword) {
+            setError('Die Passwörter stimmen nicht überein.');
+            return;
+        }
+        if (newPassword.length < 6) {
+            setError('Das neue Passwort muss mindestens 6 Zeichen lang sein.');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            await authAPI.changePassword({ oldPassword: password, newPassword });
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                user.requires_password_change = false;
+                localStorage.setItem('user', JSON.stringify(user));
+                if (onLogin) onLogin(user);
+            }
+            navigate('/');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Passwortänderung fehlgeschlagen');
         } finally {
             setLoading(false);
         }
@@ -67,53 +106,109 @@ function Login({ onLogin }) {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} style={styles.form}>
-                    <div style={styles.inputBox}>
-                        <label style={styles.label}>Benutzername</label>
-                        <div style={styles.inputWrapper}>
-                            <div style={styles.inputIcon}>
-                                <FiUser size={18} />
+                {!requirePasswordChange ? (
+                    <form onSubmit={handleSubmit} style={styles.form}>
+                        <div style={styles.inputBox}>
+                            <label style={styles.label}>Benutzername</label>
+                            <div style={styles.inputWrapper}>
+                                <div style={styles.inputIcon}>
+                                    <FiUser size={18} />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="Benutzername"
+                                    required
+                                    autoFocus
+                                    style={styles.input}
+                                    className="login-input"
+                                />
                             </div>
-                            <input
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Benutzername"
-                                required
-                                autoFocus
-                                style={styles.input}
-                                className="login-input"
-                            />
                         </div>
-                    </div>
 
-                    <div style={styles.inputBox}>
-                        <label style={styles.label}>Passwort</label>
-                        <div style={styles.inputWrapper}>
-                            <div style={styles.inputIcon}>
-                                <FiLock size={18} />
+                        <div style={styles.inputBox}>
+                            <label style={styles.label}>Passwort</label>
+                            <div style={styles.inputWrapper}>
+                                <div style={styles.inputIcon}>
+                                    <FiLock size={18} />
+                                </div>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Passwort"
+                                    required
+                                    style={styles.input}
+                                    className="login-input"
+                                />
                             </div>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Passwort"
-                                required
-                                style={styles.input}
-                                className="login-input"
-                            />
                         </div>
-                    </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        style={styles.submitBtn}
-                        className="login-submit-btn"
-                    >
-                        {loading ? 'Identität wird geprüft...' : 'Anmelden'}
-                    </button>
-                </form>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={styles.submitBtn}
+                            className="login-submit-btn"
+                        >
+                            {loading ? 'Identität wird geprüft...' : 'Anmelden'}
+                        </button>
+                    </form>
+                ) : (
+                    <form onSubmit={handlePasswordChangeSubmit} style={styles.form}>
+                        <div style={{ padding: '16px', background: 'var(--color-warning-light)', borderRadius: 'var(--radius-lg)', marginBottom: '16px', border: '1px solid var(--color-warning)' }}>
+                            <h4 style={{ margin: '0 0 8px 0', color: 'var(--color-text-primary)' }}>Erstanmeldung</h4>
+                            <p style={{ margin: 0, fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                                Bitte vergeben Sie ein eigenes, sicheres Passwort, um fortzufahren.
+                            </p>
+                        </div>
+                        <div style={styles.inputBox}>
+                            <label style={styles.label}>Neues Passwort</label>
+                            <div style={styles.inputWrapper}>
+                                <div style={styles.inputIcon}>
+                                    <FiLock size={18} />
+                                </div>
+                                <input
+                                    type="password"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    placeholder="Mindestens 6 Zeichen"
+                                    required
+                                    autoFocus
+                                    style={styles.input}
+                                    className="login-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div style={styles.inputBox}>
+                            <label style={styles.label}>Passwort wiederholen</label>
+                            <div style={styles.inputWrapper}>
+                                <div style={styles.inputIcon}>
+                                    <FiLock size={18} />
+                                </div>
+                                <input
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="Passwort bestätigen"
+                                    required
+                                    style={styles.input}
+                                    className="login-input"
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={styles.submitBtn}
+                            className="login-submit-btn"
+                        >
+                            {loading ? 'Wird gespeichert...' : 'Passwort ändern & einloggen'}
+                        </button>
+                    </form>
+                )}
 
                 <div style={styles.footer}>
                     <button
