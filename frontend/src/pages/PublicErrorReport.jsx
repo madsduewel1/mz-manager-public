@@ -183,8 +183,8 @@ function PublicErrorReport() {
             <div style={styles.card}>
                 {step === 'room' && (
                     <>
-                        <StepHeader title="Wo ist das Problem?" />
-                        <p style={styles.subtitle}>Wähle zuerst den Raum aus</p>
+                        <StepHeader title="Schritt 1: Gebäude & Raum" />
+                        <p style={styles.subtitle}>Wo befindet sich das kaputte Gerät oder der defekte Schrank?</p>
                         {loading ? <div className="loading">Lade Räume...</div> : (
                             <div style={styles.grid}>
                                 {rooms.map(room => (
@@ -204,8 +204,8 @@ function PublicErrorReport() {
 
                 {step === 'container' && (
                     <>
-                        <StepHeader title={selectedRoom.name} onBack={() => setStep('room')} />
-                        <p style={styles.subtitle}>Wähle den Schrank oder Wagen</p>
+                        <StepHeader title={`Schritt 2: (${selectedRoom.name})`} onBack={() => setStep('room')} />
+                        <p style={styles.subtitle}>In welchem Schrank oder Wagen liegt das defekte Gerät?</p>
                         {loading ? <div className="loading">Lade Einheiten...</div> : (
                             <div style={styles.grid}>
                                 {containers.map(c => (
@@ -225,15 +225,15 @@ function PublicErrorReport() {
 
                 {step === 'asset' && (
                     <>
-                        <StepHeader title={selectedContainer.name} onBack={() => setStep('container')} />
-                        <p style={styles.subtitle}>Welches Gerät ist defekt?</p>
+                        <StepHeader title={`Schritt 3: (${selectedContainer.name})`} onBack={() => setStep('container')} />
+                        <p style={styles.subtitle}>Welches Gerät in diesem Wagen/Schrank ist kaputt?</p>
                         {loading ? <div className="loading">Lade Geräte...</div> : (
                             <div style={styles.grid}>
-                                <button style={{ ...styles.navItem, background: 'rgba(225, 29, 72, 0.05)' }} onClick={() => setStep('details')}>
-                                    <div style={{ ...styles.navIcon, background: 'var(--color-primary)' }}><FiAlertCircle color="white" /></div>
+                                <button style={{ ...styles.navItem, background: 'var(--color-bg-light)' }} onClick={() => setStep('details')}>
+                                    <div style={{ ...styles.navIcon, background: 'var(--color-bg-medium)', color: 'var(--color-text-primary)' }}><FiAlertCircle /></div>
                                     <div style={styles.navText}>
                                         <span style={styles.navName}>Anderes Problem</span>
-                                        <span style={styles.navMeta}>Gilt für den gesamten Container</span>
+                                        <span style={styles.navMeta}>Gilt für den gesamten Wagen / Schrank</span>
                                     </div>
                                     <FiChevronRight style={styles.navArrow} />
                                 </button>
@@ -255,7 +255,7 @@ function PublicErrorReport() {
                 {step === 'details' && (
                     <>
                         <StepHeader
-                            title="Fehler beschreiben"
+                            title="Schritt 4: Fehler genau beschreiben"
                             onBack={qrCode ? null : (selectedAsset ? () => setStep('asset') : () => setStep('container'))}
                         />
 
@@ -273,12 +273,12 @@ function PublicErrorReport() {
 
                         <form onSubmit={handleSubmit} style={styles.form}>
                             <div className="form-group">
-                                <label className="form-label">Was funktioniert nicht? *</label>
+                                <label className="form-label">Was genau funktioniert nicht? *</label>
                                 <textarea
                                     className="form-input"
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
-                                    placeholder="z.B. Display flackert, Akku lädt nicht..."
+                                    placeholder="Bitte beschreibe den Fehler so genau wie möglich (z.B. Tablet Nr. 15 lädt nicht, Bildschirm hat einen Riss, iPad lässt sich nicht einschalten...)"
                                     required
                                     rows="4"
                                     style={styles.textarea}
@@ -477,12 +477,17 @@ const styles = {
         objectFit: 'cover'
     },
     submitBtn: {
+        background: 'var(--color-primary)',
+        color: 'var(--color-text-on-primary)',
         padding: '18px',
         borderRadius: '16px',
         fontWeight: 800,
         fontSize: '16px',
-        boxShadow: '0 10px 20px rgba(225, 29, 72, 0.3)',
-        marginTop: '10px'
+        border: 'none',
+        minHeight: '56px',
+        marginTop: '10px',
+        boxShadow: 'var(--shadow-md)',
+        transition: 'all var(--transition-base)'
     },
     errorBox: {
         marginTop: '20px',

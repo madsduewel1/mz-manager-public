@@ -51,7 +51,6 @@ function Login({ onLogin }) {
             <button onClick={toggleTheme} style={styles.themeToggle} title="Farbschema ändern">
                 {darkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
             </button>
-
             <div style={styles.card}>
                 <div style={styles.header}>
                     <div style={styles.logoWrapper}>
@@ -123,7 +122,7 @@ function Login({ onLogin }) {
                         className="login-report-btn"
                     >
                         <FiAlertCircle size={16} />
-                        Problem ohne Login melden
+                        Fehler melden
                     </button>
                     <div style={{ marginTop: '20px' }}>MZ-Manager • v2.0</div>
                 </div>
@@ -138,7 +137,7 @@ function Login({ onLogin }) {
                 .login-input:focus {
                     background: var(--color-bg-medium) !important;
                     border-color: var(--color-primary) !important;
-                    box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.1);
+                    box-shadow: 0 0 0 3px var(--color-border);
                 }
                 .login-input::placeholder {
                     color: var(--color-text-tertiary);
@@ -146,7 +145,7 @@ function Login({ onLogin }) {
                 }
                 .login-submit-btn:hover:not(:disabled) {
                     transform: translateY(-2px);
-                    box-shadow: 0 15px 30px rgba(225, 29, 72, 0.4);
+                    box-shadow: var(--shadow-md);
                     filter: brightness(1.1);
                 }
                 .login-submit-btn:active:not(:disabled) {
@@ -177,24 +176,6 @@ const styles = {
         position: 'relative',
         overflow: 'hidden',
         fontFamily: 'var(--font-family)'
-    },
-    bgGradient: {
-        position: 'absolute',
-        top: '-10%',
-        right: '-10%',
-        width: '600px',
-        height: '600px',
-        background: 'radial-gradient(circle, hsla(220, 100%, 50%, 0.15) 0%, transparent 70%)',
-        zIndex: 0
-    },
-    bgGradientBottom: {
-        position: 'absolute',
-        bottom: '-10%',
-        left: '-10%',
-        width: '500px',
-        height: '500px',
-        background: 'radial-gradient(circle, hsla(340, 100%, 50%, 0.1) 0%, transparent 70%)',
-        zIndex: 0
     },
     themeToggle: {
         position: 'fixed',
@@ -237,8 +218,7 @@ const styles = {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        margin: '0 auto var(--space-lg)',
-        boxShadow: '0 8px 16px rgba(225, 29, 72, 0.2)'
+        margin: '0 auto var(--space-lg)'
     },
     headerTitle: {
         fontSize: '28px',
