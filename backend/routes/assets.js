@@ -135,12 +135,15 @@ router.post('/', authMiddleware, requirePermission('assets.manage'), async (req,
         // Generate QR code
         const qr_code = generateQRId('ASSET');
 
+        // Parse container_id to null if it's an empty string
+        const parsedContainerId = container_id === '' ? null : container_id;
+
         // Insert asset
         const [result] = await pool.query(
             `INSERT INTO assets 
        (inventory_number, serial_number, type, model, manufacturer, status, container_id, qr_code, purchase_date, warranty_until, notes) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [inventory_number, serial_number, type, model, manufacturer, status || 'ok', container_id, qr_code, purchase_date, warranty_until, notes]
+            [inventory_number, serial_number || null, type, model || null, manufacturer || null, status || 'ok', parsedContainerId, qr_code, purchase_date || null, warranty_until || null, notes || null]
         );
 
         // Add to history
@@ -187,13 +190,16 @@ router.put('/:id', authMiddleware, requirePermission('assets.manage'), async (re
             return res.status(404).json({ error: 'Asset nicht gefunden' });
         }
 
+        // Parse container_id to null if it's an empty string
+        const parsedContainerId = container_id === '' ? null : container_id;
+
         // Update asset
         await pool.query(
             `UPDATE assets 
        SET inventory_number = ?, serial_number = ?, type = ?, model = ?, manufacturer = ?, 
            status = ?, container_id = ?, purchase_date = ?, warranty_until = ?, notes = ?
        WHERE id = ?`,
-            [inventory_number, serial_number, type, model, manufacturer, status, container_id, purchase_date, warranty_until, notes, id]
+            [inventory_number, serial_number || null, type, model || null, manufacturer || null, status, parsedContainerId, purchase_date || null, warranty_until || null, notes || null, id]
         );
 
         // Add to history if status changed

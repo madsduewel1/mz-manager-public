@@ -43,7 +43,7 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
         const { username, email, roles, first_name, last_name, password, requires_password_change } = req.body;
 
         let query = 'UPDATE users SET username = ?, email = ?, first_name = ?, last_name = ?';
-        let params = [username, email, first_name, last_name];
+        let params = [username || '', email || '', first_name || '', last_name || ''];
 
         if (password) {
             const password_hash = await bcrypt.hash(password, 10);
