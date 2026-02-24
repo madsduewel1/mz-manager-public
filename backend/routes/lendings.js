@@ -112,9 +112,9 @@ router.post('/', authMiddleware, requirePermission('lendings.create'), async (re
             }
         }
 
-        // Sanitize IDs (convert empty strings to null)
-        const sanitizedAssetId = asset_id || null;
-        const sanitizedContainerId = container_id || null;
+        // Sanitize IDs (convert empty strings to null to avoid strict mode errors)
+        const sanitizedAssetId = asset_id === '' ? null : (asset_id || null);
+        const sanitizedContainerId = container_id === '' ? null : (container_id || null);
 
         // Insert lending
         const [result] = await pool.query(
