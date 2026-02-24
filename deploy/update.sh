@@ -39,10 +39,12 @@ export $(grep -v '^#' .env | xargs)
 sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "UPDATE roles SET is_system = FALSE WHERE name IN ('Mediencoach', 'Lehrer', 'Schüler');"
 
 # 2. Fehlende Spalten in 'users' sicher ergänzen (falls sie fehlen)
-sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;" 2>/dev/null || true
-sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS requires_password_change BOOLEAN DEFAULT FALSE;" 2>/dev/null || true
-sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_seen_onboarding BOOLEAN DEFAULT FALSE;" 2>/dev/null || true
-sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS theme ENUM('light', 'dark') DEFAULT 'light';" 2>/dev/null || true
+# (MariaDB 10.1 unterstützt "IF NOT EXISTS" für ADD COLUMN evtl. nicht, 
+#  deshalb Fehler ignorieren, falls die Spalte schon da ist)
+mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE;" 2>/dev/null || true
+mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN requires_password_change BOOLEAN DEFAULT FALSE;" 2>/dev/null || true
+mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN has_seen_onboarding BOOLEAN DEFAULT FALSE;" 2>/dev/null || true
+mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN theme ENUM('light', 'dark') DEFAULT 'light';" 2>/dev/null || true
 
 # 3. ENUM für Ausleihentypen in der bestehenden Datenbank erweitern
 sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE lendings MODIFY COLUMN borrower_type ENUM('Lehrer', 'klasse', 'projektgruppe', 'Schüler', 'extern', 'sonstiges') NOT NULL;" 2>/dev/null || true
