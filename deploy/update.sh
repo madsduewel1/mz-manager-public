@@ -46,8 +46,8 @@ mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN requir
 mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN has_seen_onboarding BOOLEAN DEFAULT FALSE;" 2>/dev/null || true
 mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN theme ENUM('light', 'dark') DEFAULT 'light';" 2>/dev/null || true
 
-# 3. ENUM für Ausleihentypen in der bestehenden Datenbank erweitern
-sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE lendings MODIFY COLUMN borrower_type ENUM('Lehrer', 'klasse', 'projektgruppe', 'Schüler', 'extern', 'sonstiges') NOT NULL;" 2>/dev/null || true
+# 3. ENUM für Ausleihentypen in der bestehenden Datenbank erweitern (Umlaute beachten!)
+sudo mysql --default-character-set=utf8mb4 -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE lendings MODIFY COLUMN borrower_type ENUM('Lehrer', 'klasse', 'projektgruppe', 'Schüler', 'extern', 'sonstiges') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;" 2>/dev/null || true
 
 # 4. Schema-Struktur sicherstellen (CREATE TABLE IF NOT EXISTS)
 sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < database/schema.sql
