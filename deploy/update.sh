@@ -1,72 +1,62 @@
 #!/bin/bash
 
-# MZ-Manager - Update-Skript
-# Zieht den neuesten Code von GitHub und aktualisiert die Anwendung
+# MZ-Manager Update Script
+# Dieses Script aktualisiert die Anwendung und führt notwendige Datenbank-Migrationen durch.
 
 set -e
 
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+echo "🚀 Starte MZ-Manager Update..."
 
-echo -e "${BLUE}==============================================${NC}"
-echo -e "${BLUE}       MZ-Manager Update Service             ${NC}"
-echo -e "${BLUE}==============================================${NC}"
-
-PROJECT_PATH="/var/www/mz-manager"
-
-echo -e "${GREEN}📦 Aktualisiere System-Pakete (apt)...${NC}"
-sudo apt update && sudo apt upgrade -y
-
-cd "$PROJECT_PATH"
-
-echo -e "${GREEN}📥 Ziehe neuesten Code von GitHub...${NC}"
+# 1. Repository aktualisieren
+echo "📥 Hole neueste Änderungen von GitHub..."
 git pull origin main
 
-# Backend Update
-echo -e "${GREEN}🔧 Aktualisiere Backend...${NC}"
+# 2. Datenbank-Migration
+echo "🗄️ Führe Datenbank-Migrationen durch..."
+# Hinweis: Wir nutzen node, um die Migration sicher auszuführen, falls .env vorhanden ist
 cd backend
-# Berechtigungen fixen
-sudo chown -R $USER:$USER .
+node -e "
+const mysql = require('mysql2/promise');
+require('dotenv').config({ path: '../backend/.env' });
+(async () => {
+  const pool = mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
+  });
+  try {
+    console.log('  - Prüfe Spalte initial_password...');
+    const [cols] = await pool.query('SHOW COLUMNS FROM users LIKE \"initial_password\"');
+    if (cols.length === 0) {
+      await pool.query('ALTER TABLE users ADD COLUMN initial_password VARCHAR(255) AFTER theme');
+      console.log('  ✅ Spalte initial_password hinzugefügt');
+    }
+    
+    console.log('  - Setze E-Mail auf NULLABLE...');
+    await pool.query('ALTER TABLE users MODIFY COLUMN email VARCHAR(100) NULL');
+    console.log('  ✅ E-Mail Spalte angepasst');
+    
+  } catch (e) {
+    console.error('  ❌ Migration fehlgeschlagen:', e.message);
+    process.exit(1);
+  } finally {
+    await pool.end();
+  }
+})();"
+
+# 3. Backend Abhängigkeiten
+echo "📦 Aktualisiere Backend-Abhängigkeiten..."
 npm install --production
 
-# PRIVATER FIX: Datenbank-Schema aktualisieren
-echo -e "${GREEN}💾 Aktualisiere Datenbank-Schema...${NC}"
-# Wir nutzen die Zugangsdaten aus der .env
-export $(grep -v '^#' .env | xargs)
-
-# 1. Bestehende Rollen 'Mediencoach', 'Lehrer', 'Schüler' löschbar machen
-sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "UPDATE roles SET is_system = FALSE WHERE name IN ('Mediencoach', 'Lehrer', 'Schüler');"
-
-# 2. Fehlende Spalten in 'users' sicher ergänzen (falls sie fehlen)
-# (MariaDB 10.1 unterstützt "IF NOT EXISTS" für ADD COLUMN evtl. nicht, 
-#  deshalb Fehler ignorieren, falls die Spalte schon da ist)
-mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE;" 2>/dev/null || true
-mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN requires_password_change BOOLEAN DEFAULT FALSE;" 2>/dev/null || true
-mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN has_seen_onboarding BOOLEAN DEFAULT FALSE;" 2>/dev/null || true
-mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE users ADD COLUMN theme ENUM('light', 'dark') DEFAULT 'light';" 2>/dev/null || true
-
-# 3. ENUM für Ausleihentypen in der bestehenden Datenbank erweitern (Umlaute beachten!)
-sudo mysql --default-character-set=utf8mb4 -u$DB_USER -p$DB_PASSWORD $DB_NAME -e "ALTER TABLE lendings MODIFY COLUMN borrower_type ENUM('Lehrer', 'klasse', 'projektgruppe', 'Schüler', 'extern', 'sonstiges') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;" 2>/dev/null || true
-
-# 4. Schema-Struktur sicherstellen (CREATE TABLE IF NOT EXISTS)
-sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_NAME < database/schema.sql
-
-# Frontend Update und Build
-echo -e "${GREEN}🎨 Baue Frontend neu...${NC}"
+# 4. Frontend Build
+echo "🏗️ Baue Frontend neu..."
 cd ../frontend
-# Berechtigungen fixen
-sudo chown -R $USER:$USER .
 npm install
-# Vite ausführbar machen
-chmod +x node_modules/.bin/vite || true
 npm run build
 
-# Restart Backend Service
-echo -e "${GREEN}🚀 Starte Backend-Dienst neu...${NC}"
-pm2 restart mz-manager-api || pm2 start server.js --name mz-manager-api
-pm2 save
+# 5. Services Neustart
+echo "🔄 Starte Services neu (PM2)..."
+pm2 restart mz-manager-api || echo "⚠️ PM2 Prozess 'mz-manager-api' nicht gefunden. Bitte manuell starten."
 
-echo -e "${BLUE}==============================================${NC}"
-echo -e "${GREEN}✅ Update erfolgreich abgeschlossen!${NC}"
-echo -e "${BLUE}==============================================${NC}"
+echo "✨ Update erfolgreich abgeschlossen!"
