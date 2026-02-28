@@ -13,9 +13,7 @@ export const SettingsProvider = ({ children }) => {
 
     const fetchSettings = useCallback(async () => {
         try {
-            // Use authAPI to fetch settings as it might be available to more users
-            // or adminAPI if restricted. Based on Sidebar.jsx, authAPI.get('/settings') is used.
-            const response = await authAPI.get('/settings');
+            const response = await adminAPI.getSettings();
             if (response.data) {
                 setSettings(prev => ({
                     ...prev,

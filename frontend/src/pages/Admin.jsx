@@ -173,7 +173,7 @@ function Admin() {
             updateSettingsState(settings);
             success('Einstellungen gespeichert');
         } catch (err) {
-            error('Fehler beim Speichern der Einstellungen');
+            error(err.response?.data?.error || 'Fehler beim Speichern der Einstellungen');
         } finally {
             setSubmitting(false);
         }

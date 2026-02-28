@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
 });
 
 // Update settings
-router.post('/', authMiddleware, requirePermission('all'), async (req, res) => {
+router.post('/', authMiddleware, requirePermission('users.manage'), async (req, res) => {
     try {
         const { org_name, base_url } = req.body;
 
@@ -71,7 +71,7 @@ router.post('/', authMiddleware, requirePermission('all'), async (req, res) => {
 });
 
 // Upload Logo
-router.post('/logo', authMiddleware, requirePermission('all'), upload.single('logo'), async (req, res) => {
+router.post('/logo', authMiddleware, requirePermission('users.manage'), upload.single('logo'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Keine Datei hochgeladen' });
 
@@ -89,7 +89,7 @@ router.post('/logo', authMiddleware, requirePermission('all'), upload.single('lo
 });
 
 // Delete Logo
-router.delete('/logo', authMiddleware, requirePermission('all'), async (req, res) => {
+router.delete('/logo', authMiddleware, requirePermission('users.manage'), async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT setting_value FROM settings WHERE setting_key = ?', ['logo_path']);
 
