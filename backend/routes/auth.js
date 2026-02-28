@@ -102,31 +102,42 @@ router.post('/login', async (req, res) => {
 router.post('/register', authMiddleware, async (req, res) => {
     const connection = await pool.getConnection();
     try {
-        if (req.user.role !== 'Administrator') {
+        const userRole = (req.user.role || '').toLowerCase();
+        if (userRole !== 'administrator' && userRole !== 'admin') {
             return res.status(403).json({ error: 'Nur Administratoren können Benutzer erstellen' });
         }
 
         await connection.beginTransaction();
-        const { username, email, password, roles, first_name, last_name } = req.body;
+        let { username, email, password, roles, first_name, last_name } = req.body;
 
-        if (!username || !email || !password) {
-            return res.status(400).json({ error: 'Benutzername, E-Mail und Passwort erforderlich' });
+        // Ensure empty email is stored as NULL to avoid UNIQUE constraint violation with empty strings
+        if (!email || email.trim() === '') {
+            email = null;
         }
 
-        const [existing] = await connection.query(
-            'SELECT id FROM users WHERE username = ? OR email = ?',
-            [username, email]
-        );
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Benutzername und Passwort erforderlich' });
+        }
+
+        let existingQuery = 'SELECT id FROM users WHERE username = ?';
+        let existingParams = [username];
+
+        if (email) {
+            existingQuery += ' OR email = ?';
+            existingParams.push(email);
+        }
+
+        const [existing] = await connection.query(existingQuery, existingParams);
 
         if (existing.length > 0) {
             return res.status(400).json({ error: 'Benutzername oder E-Mail bereits vergeben' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        // Create user with mandatory password change
+        // Create user with mandatory password change and store initial password
         const [result] = await connection.execute(
-            'INSERT INTO users (username, email, password_hash, first_name, last_name, requires_password_change) VALUES (?, ?, ?, ?, ?, 1)',
-            [username, email, hashedPassword, first_name || null, last_name || null]
+            'INSERT INTO users (username, email, password_hash, first_name, last_name, requires_password_change, initial_password) VALUES (?, ?, ?, ?, ?, 1, ?)',
+            [username, email, hashedPassword, first_name || null, last_name || null, password]
         );
         const userId = result.insertId;
 

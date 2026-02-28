@@ -203,7 +203,7 @@ const styles = {
     },
     button: {
         backgroundColor: 'var(--color-primary)',
-        color: 'white',
+        color: 'var(--color-text-on-primary)',
         border: 'none',
         padding: 'var(--space-md)',
         borderRadius: 'var(--radius-sm)',

@@ -5,8 +5,35 @@
 
 set -e
 
+set -e
+
+# --- Initial Parameters ---
+ORG_NAME="MZ-Manager"
+BASE_URL=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --org)
+      ORG_NAME="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    --url)
+      BASE_URL="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    *)
+      shift # past argument
+      ;;
+  esac
+done
+
 echo "============================================"
 echo "MZ-Manager Installation Script"
+echo "Organisation: $ORG_NAME"
+[ -n "$BASE_URL" ] && echo "System-URL:   $BASE_URL"
 echo "============================================"
 
 # Update system
@@ -44,6 +71,12 @@ sudo mysql -e "FLUSH PRIVILEGES;"
 echo "📥 Importing database schema..."
 sudo mysql mz_manager < ../backend/database/schema.sql
 
+echo "⚙️  Setting initial system values..."
+sudo mysql mz_manager -e "INSERT INTO settings (setting_key, setting_value) VALUES ('org_name', '$ORG_NAME') ON DUPLICATE KEY UPDATE setting_value = '$ORG_NAME';"
+if [ -n "$BASE_URL" ]; then
+    sudo mysql mz_manager -e "INSERT INTO settings (setting_key, setting_value) VALUES ('base_url', '$BASE_URL') ON DUPLICATE KEY UPDATE setting_value = '$BASE_URL';"
+fi
+
 # Backend setup
 echo "🔧 Setting up backend..."
 cd ../backend
@@ -74,6 +107,11 @@ sudo cp ../deploy/nginx.conf /etc/nginx/sites-available/mz-manager
 sudo ln -sf /etc/nginx/sites-available/mz-manager /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
+
+# Link CLI Tool
+echo "🔗 Creating CLI symlink..."
+sudo chmod +x ../backend/bin/mz-manager
+sudo ln -sf "$(pwd)/../backend/bin/mz-manager" /usr/local/bin/mz-manager
 
 echo ""
 echo "============================================"

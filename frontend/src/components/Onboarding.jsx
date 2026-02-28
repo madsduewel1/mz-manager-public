@@ -234,7 +234,7 @@ const styles = {
     },
     primaryButton: {
         backgroundColor: 'var(--color-primary)',
-        color: 'white'
+        color: 'var(--color-text-on-primary)'
     },
     secondaryButton: {
         backgroundColor: 'transparent',

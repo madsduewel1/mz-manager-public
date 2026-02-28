@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { FiMenu, FiX, FiBox } from 'react-icons/fi';
 import { isAuthenticated } from './utils/auth';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { ConfirmationProvider } from './contexts/ConfirmationContext';
 
 // Pages
@@ -118,81 +119,101 @@ function App() {
 
     return (
         <NotificationProvider>
-            <ConfirmationProvider>
-                <Router>
-                    {isLoading && <div className="top-loader"></div>}
-                    <Routes>
-                        {/* Public Routes */}
-                        <Route path="/login" element={<Login onLogin={handleLogin} />} />
-                        <Route path="/report" element={<PublicErrorReport />} />
-                        <Route path="/report/:qrCode" element={<PublicErrorReport />} />
+            <SettingsProvider>
+                <ConfirmationProvider>
+                    <Router>
+                        {isLoading && <div className="top-loader"></div>}
+                        <Routes>
+                            {/* Public Routes */}
+                            <Route path="/login" element={<Login onLogin={handleLogin} />} />
+                            <Route path="/report" element={<PublicErrorReport />} />
+                            <Route path="/report/:qrCode" element={<PublicErrorReport />} />
 
-                        {/* Protected Routes */}
-                        <Route
-                            path="/*"
-                            element={
-                                <ProtectedRoute>
-                                    <div className="layout-wrapper">
-                                        <Sidebar
-                                            isOpen={sidebarOpen}
-                                            onClose={() => setSidebarOpen(false)}
-                                            onProfileClick={() => setShowProfileModal(true)}
-                                        />
+                            {/* Protected Routes */}
+                            <Route
+                                path="/*"
+                                element={
+                                    <ProtectedRoute>
+                                        <div className="layout-wrapper">
+                                            <Sidebar
+                                                isOpen={sidebarOpen}
+                                                onClose={() => setSidebarOpen(false)}
+                                                onProfileClick={() => setShowProfileModal(true)}
+                                            />
 
-                                        <div className="main-content">
-                                            {/* Mobile Header */}
-                                            <header className="mobile-header">
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', color: 'var(--color-primary-light)' }}>
-                                                    <FiBox size={24} />
-                                                    <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>MZ-Manager</span>
+                                            <div className="main-content">
+                                                {/* Mobile Header */}
+                                                <header className="mobile-header">
+                                                    <MobileHeaderBrand />
+                                                    <button
+                                                        className="mobile-nav-toggle"
+                                                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                                                    >
+                                                        {sidebarOpen ? <FiX /> : <FiMenu />}
+                                                    </button>
+                                                </header>
+
+                                                <div className="page">
+                                                    <Breadcrumbs />
+                                                    <Routes>
+                                                        <Route path="/" element={<Dashboard />} />
+                                                        <Route path="/dashboard" element={<Dashboard />} />
+                                                        <Route path="/assets" element={<Assets />} />
+                                                        <Route path="/assets/:id" element={<AssetDetail />} />
+                                                        <Route path="/containers" element={<Containers />} />
+                                                        <Route path="/containers/:id" element={<ContainerDetail />} />
+                                                        <Route path="/lendings" element={<Lendings />} />
+                                                        <Route path="/error-reports" element={<ErrorReports />} />
+                                                        <Route path="/admin" element={<Admin />} />
+                                                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                                                    </Routes>
                                                 </div>
-                                                <button
-                                                    className="mobile-nav-toggle"
-                                                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                                                >
-                                                    {sidebarOpen ? <FiX /> : <FiMenu />}
-                                                </button>
-                                            </header>
-
-                                            <div className="page">
-                                                <Breadcrumbs />
-                                                <Routes>
-                                                    <Route path="/" element={<Dashboard />} />
-                                                    <Route path="/dashboard" element={<Dashboard />} />
-                                                    <Route path="/assets" element={<Assets />} />
-                                                    <Route path="/assets/:id" element={<AssetDetail />} />
-                                                    <Route path="/containers" element={<Containers />} />
-                                                    <Route path="/containers/:id" element={<ContainerDetail />} />
-                                                    <Route path="/lendings" element={<Lendings />} />
-                                                    <Route path="/error-reports" element={<ErrorReports />} />
-                                                    <Route path="/admin" element={<Admin />} />
-                                                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                                                </Routes>
                                             </div>
-                                        </div>
-                                        <UserProfileModal
-                                            isOpen={showProfileModal}
-                                            onClose={() => setShowProfileModal(false)}
-                                            user={currentUser}
-                                        />
+                                            <UserProfileModal
+                                                isOpen={showProfileModal}
+                                                onClose={() => setShowProfileModal(false)}
+                                                user={currentUser}
+                                            />
 
-                                        {currentUser &&
-                                            !currentUser.has_seen_onboarding &&
-                                            !currentUser.requires_password_change && (
-                                                <Onboarding
-                                                    user={currentUser}
-                                                    onComplete={handleOnboardingComplete}
-                                                />
-                                            )}
-                                    </div>
-                                </ProtectedRoute>
-                            }
-                        />
-                    </Routes>
-                </Router>
-            </ConfirmationProvider>
+                                            {currentUser &&
+                                                !currentUser.has_seen_onboarding &&
+                                                !currentUser.requires_password_change && (
+                                                    <Onboarding
+                                                        user={currentUser}
+                                                        onComplete={handleOnboardingComplete}
+                                                    />
+                                                )}
+                                        </div>
+                                    </ProtectedRoute>
+                                }
+                            />
+                        </Routes>
+                    </Router>
+                </ConfirmationProvider>
+            </SettingsProvider>
         </NotificationProvider>
     );
 }
+
+// Helper Component for Mobile Header to use useSettings hook
+const MobileHeaderBrand = () => {
+    const { settings } = useSettings();
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', color: 'var(--color-primary-light)', overflow: 'hidden' }}>
+            {settings.logo_path ? (
+                <img
+                    src={`/uploads/${settings.logo_path}`}
+                    alt="Logo"
+                    style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+                />
+            ) : (
+                <FiBox size={24} />
+            )}
+            <span style={{ fontWeight: 700, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>
+                {settings.org_name || 'MZ-Manager'}
+            </span>
+        </div>
+    );
+};
 
 export default App;

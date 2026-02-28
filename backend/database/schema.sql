@@ -8,7 +8,7 @@ USE mz_manager;
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NULL,
     password_hash VARCHAR(255) NOT NULL,
     first_name VARCHAR(50),
     last_name VARCHAR(50),
@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     requires_password_change BOOLEAN DEFAULT FALSE,
     has_seen_onboarding BOOLEAN DEFAULT FALSE,
     theme ENUM('light', 'dark') DEFAULT 'light',
+    initial_password VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_username (username)

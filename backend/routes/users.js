@@ -10,7 +10,7 @@ router.get('/', authMiddleware, requirePermission('users.manage'), async (req, r
     try {
         const [users] = await pool.query(`
             SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.created_at,
-                   u.is_active, u.theme,
+                   u.is_active, u.theme, u.initial_password,
                    GROUP_CONCAT(DISTINCT r.name) as roles_list,
                    GROUP_CONCAT(DISTINCT up.permission) as permissions_list
             FROM users u
@@ -40,10 +40,15 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
     try {
         await connection.beginTransaction();
         const { id } = req.params;
-        const { username, email, roles, first_name, last_name, password, requires_password_change } = req.body;
+        let { username, email, roles, first_name, last_name, password, requires_password_change } = req.body;
+
+        // Ensure empty email is stored as NULL
+        if (!email || String(email).trim() === '') {
+            email = null;
+        }
 
         let query = 'UPDATE users SET username = ?, email = ?, first_name = ?, last_name = ?, has_seen_onboarding = 0';
-        let params = [username || '', email || '', first_name || '', last_name || ''];
+        let params = [username || '', email || null, first_name || '', last_name || ''];
 
         if (password) {
             const password_hash = await bcrypt.hash(password, 10);
@@ -115,6 +120,12 @@ router.delete('/:id', authMiddleware, requirePermission('users.manage'), async (
     try {
         const { id } = req.params;
 
+        // PROTECT ADMIN USER
+        const [userToProtect] = await pool.query('SELECT username FROM users WHERE id = ?', [id]);
+        if (userToProtect.length > 0 && userToProtect[0].username === 'admin') {
+            return res.status(403).json({ error: 'Der Hauptadministrator-Account kann nicht gelöscht werden' });
+        }
+
         // Check if this is the last admin
         const [admins] = await pool.query(`
             SELECT COUNT(*) as count 
@@ -153,6 +164,12 @@ router.delete('/:id', authMiddleware, requirePermission('users.manage'), async (
 router.post('/:id/toggle-active', authMiddleware, requirePermission('users.manage'), async (req, res) => {
     try {
         const { id } = req.params;
+
+        // PROTECT ADMIN USER
+        const [userToProtect] = await pool.query('SELECT username FROM users WHERE id = ?', [id]);
+        if (userToProtect.length > 0 && userToProtect[0].username === 'admin') {
+            return res.status(403).json({ error: 'Der Hauptadministrator-Account kann nicht deaktiviert werden' });
+        }
 
         // Check if this is the last active admin
         const [activeAdmins] = await pool.query(`

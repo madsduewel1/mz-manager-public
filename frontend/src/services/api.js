@@ -105,7 +105,11 @@ export const adminAPI = {
     updateSettings: (data) => api.post('/settings', data),
     uploadLogo: (formData) => api.post('/settings/logo', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    }),
+    deleteLogo: () => api.delete('/settings/logo'),
+    toggleUserActive: (userId) => api.post(`/users/${userId}/toggle-active`),
+    addUserPermission: (userId, permission) => api.post(`/users/${userId}/permissions`, { permission }),
+    removeUserPermission: (userId, permission) => api.delete(`/users/${userId}/permissions/${permission}`)
 };
 
 export default api;

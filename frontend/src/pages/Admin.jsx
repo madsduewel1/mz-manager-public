@@ -2,13 +2,18 @@ import { useState, useEffect } from 'react';
 import {
     FiSettings, FiUsers, FiShield, FiPlus, FiTrash2, FiEdit2, FiKey,
     FiUserCheck, FiUserX, FiGrid, FiList, FiCpu, FiMapPin, FiBox,
-    FiLock, FiActivity, FiMoreVertical, FiChevronDown, FiCheck
+    FiLock, FiActivity, FiMoreVertical, FiChevronDown, FiCheck,
+    FiDownload, FiCopy, FiRefreshCcw, FiImage
 } from 'react-icons/fi';
-import { authAPI, dashboardAPI, adminAPI } from '../services/api';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+import QRCode from 'qrcode';
+import { authAPI, dashboardAPI, adminAPI, containersAPI } from '../services/api';
 import Modal from '../components/Modal';
 import MultiSelectDropdown from '../components/MultiSelectDropdown';
 import { useNotification } from '../contexts/NotificationContext';
 import { useConfirmation } from '../contexts/ConfirmationContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { getUser, hasRole, hasPermission } from '../utils/auth';
 
 function Admin() {
@@ -20,7 +25,7 @@ function Admin() {
     const [containers, setContainers] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [stats, setStats] = useState(null);
-    const [settings, setSettings] = useState({ org_name: 'Thomas-Mann-Schule' });
+    const { settings, updateSettingsState, refreshSettings } = useSettings();
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('');
     const [loading, setLoading] = useState(false);
@@ -32,6 +37,9 @@ function Admin() {
     const [selectedUsers, setSelectedUsers] = useState([]);
     const [openDropdown, setOpenDropdown] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
+    const [showUserDetailModal, setShowUserDetailModal] = useState(false);
+    const [selectedDetailUser, setSelectedDetailUser] = useState(null);
+    const [newlyCreatedPasswords, setNewlyCreatedPasswords] = useState({}); // { username: password }
     const { success, error } = useNotification();
     const { confirm } = useConfirmation();
     const user = getUser();
@@ -109,7 +117,7 @@ function Admin() {
         }
 
         if (activeTab === 'settings') {
-            loadSettings();
+            refreshSettings();
         }
     }, [activeTab]);
 
@@ -154,12 +162,7 @@ function Admin() {
     };
 
     const loadSettings = async () => {
-        try {
-            const response = await adminAPI.getSettings();
-            setSettings(response.data);
-        } catch (err) {
-            console.error('Error loading settings:', err);
-        }
+        await refreshSettings();
     };
 
     const handleSettingsSubmit = async (e) => {
@@ -167,9 +170,10 @@ function Admin() {
         setSubmitting(true);
         try {
             await adminAPI.updateSettings(settings);
+            updateSettingsState(settings);
             success('Einstellungen gespeichert');
         } catch (err) {
-            error('Fehler beim Speichern');
+            error('Fehler beim Speichern der Einstellungen');
         } finally {
             setSubmitting(false);
         }
@@ -184,10 +188,29 @@ function Admin() {
 
         try {
             const response = await adminAPI.uploadLogo(formData);
-            setSettings({ ...settings, logo_path: response.data.logo_path });
+            updateSettingsState({ logo_path: response.data.logo_path });
             success('Logo hochgeladen');
         } catch (err) {
             error('Fehler beim Logo-Upload');
+        }
+    };
+
+    const handleDeleteLogo = async () => {
+        const confirmed = await confirm({
+            title: 'Logo löschen',
+            message: 'Möchten Sie das Logo der Organisation wirklich entfernen?',
+            confirmLabel: 'Löschen',
+            confirmColor: 'var(--color-error)'
+        });
+
+        if (!confirmed) return;
+
+        try {
+            await adminAPI.deleteLogo();
+            updateSettingsState({ logo_path: null });
+            success('Logo entfernt');
+        } catch (err) {
+            error('Fehler beim Löschen des Logos');
         }
     };
 
@@ -259,12 +282,32 @@ function Admin() {
             if (modalType === 'user-edit') {
                 await adminAPI.updateUser(editingUser.id, userForm);
                 success('Benutzer erfolgreich aktualisiert');
+                setShowModal(false);
+                loadUsers();
             } else {
+                const tempPassword = userForm.password;
+                const tempUserData = { ...userForm };
                 await adminAPI.createUser(userForm);
                 success('Benutzer erfolgreich erstellt');
+
+                const isConfirmed = await confirm({
+                    title: 'Benutzer erstellt',
+                    message: `Der Benutzer "${tempUserData.username}" wurde angelegt. Möchten Sie jetzt das Info-Blatt (PDF) mit den Anmeldedaten herunterladen?`,
+                    confirmText: 'PDF herunterladen',
+                    cancelText: 'Später',
+                    type: 'info'
+                });
+
+                if (isConfirmed) {
+                    generateUserPDF(tempUserData, tempPassword);
+                }
+
+                // Store password for later PDF downloads in this session
+                setNewlyCreatedPasswords(prev => ({ ...prev, [tempUserData.username]: tempPassword }));
+
+                setShowModal(false);
+                loadUsers();
             }
-            setShowModal(false);
-            loadUsers();
         } catch (err) {
             error(err.response?.data?.error || 'Fehler beim Speichern');
         } finally {
@@ -316,6 +359,97 @@ function Admin() {
         success('Passwort generiert und in Zwischenablage kopiert!');
     };
 
+    const generateUserPDF = async (user, initialPassword = null) => {
+        const doc = new jsPDF();
+        const orgName = settings.org_name || 'MZ-Manager';
+        const loginUrl = settings.base_url || window.location.origin;
+        const pwd = initialPassword || newlyCreatedPasswords[user.username] || user.initial_password;
+
+        // Header
+        doc.setFontSize(22);
+        doc.setTextColor(40, 40, 40);
+        doc.text(orgName, 20, 30);
+
+        doc.setFontSize(16);
+        doc.setTextColor(100, 100, 100);
+        doc.text('Ihre Zugangsdaten', 20, 40);
+
+        doc.setLineWidth(0.5);
+        doc.line(20, 45, 190, 45);
+
+        // User Info
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Benutzerinformationen:', 20, 60);
+
+        doc.setFont('helvetica', 'normal');
+        let yPos = 70;
+        doc.text(`Name: ${user.first_name || ''} ${user.last_name || ''}`, 20, yPos);
+        yPos += 10;
+        doc.text(`Benutzername: ${user.username}`, 20, yPos);
+        yPos += 10;
+        if (user.email) {
+            doc.text(`E-Mail: ${user.email}`, 20, yPos);
+            yPos += 10;
+        }
+
+        // Login Credentials
+        doc.setFont('helvetica', 'bold');
+        doc.text('Anmeldedaten:', 20, yPos + 10);
+        doc.setFont('helvetica', 'normal');
+        yPos += 20;
+
+        doc.text(`URL: ${loginUrl}`, 20, yPos);
+        yPos += 10;
+        if (pwd) {
+            doc.text(`Passwort: ${pwd}`, 20, yPos);
+            yPos += 10;
+            doc.setFontSize(10);
+            doc.setTextColor(200, 0, 0);
+            doc.text('(Bitte ändern Sie dieses Passwort nach der ersten Anmeldung!)', 20, yPos);
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            yPos += 10;
+        } else {
+            doc.text('Passwort: (Wie mit Administrator vereinbart)', 20, yPos);
+            yPos += 10;
+        }
+
+        // Instructions
+        doc.setFont('helvetica', 'bold');
+        doc.text('Anleitung:', 20, yPos + 10);
+        doc.setFont('helvetica', 'normal');
+        yPos += 20;
+        doc.setFontSize(11);
+        const instructions = [
+            '1. Öffnen Sie den Browser und rufen Sie die oben genannte URL auf.',
+            '2. Geben Sie Ihren Benutzernamen und das Passwort ein.',
+            '3. Falls Sie dazu aufgefordert werden, ändern Sie Ihr Passwort.',
+            '4. Scannen Sie den QR-Code unten, um direkt zur Login-Seite zu gelangen.'
+        ];
+        instructions.forEach(line => {
+            doc.text(line, 20, yPos);
+            yPos += 7;
+        });
+
+        // QR Code
+        try {
+            const qrDataUrl = await QRCode.toDataURL(loginUrl, { width: 100, margin: 2 });
+            doc.addImage(qrDataUrl, 'PNG', 75, yPos + 10, 60, 60);
+        } catch (err) {
+            console.error('QR Code error:', err);
+        }
+
+        // Footer
+        doc.setFontSize(9);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Generiert am ${new Date().toLocaleString('de-DE')} von ${getUser()?.username}`, 20, 280);
+
+        doc.save(`Zugangsdaten_${user.username}.pdf`);
+        success('PDF wurde generiert.');
+    };
+
     // User Permissions Management
     const [showUserPermModal, setShowUserPermModal] = useState(false);
     const [permUser, setPermUser] = useState(null);
@@ -331,14 +465,10 @@ function Admin() {
 
         try {
             if (hasDirect) {
-                await axios.delete(`/api/users/${permUser.id}/permissions/${perm}`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                await adminAPI.removeUserPermission(permUser.id, perm);
                 success('Berechtigung entfernt');
             } else {
-                await axios.post(`/api/users/${permUser.id}/permissions`, { permission: perm }, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-                });
+                await adminAPI.addUserPermission(permUser.id, perm);
                 success('Berechtigung hinzugefügt');
             }
             // Update local state by reloading users
@@ -418,8 +548,12 @@ function Admin() {
     };
 
     const toggleUserActive = async (user) => {
+        if (user.username === 'admin') {
+            error('Der Hauptadministrator kann nicht deaktiviert werden');
+            return;
+        }
         try {
-            await adminAPI.updateUser(user.id, { is_active: !user.is_active });
+            await adminAPI.toggleUserActive(user.id);
             success('Benutzerstatus geändert');
             loadUsers();
         } catch (err) {
@@ -438,7 +572,8 @@ function Admin() {
         try {
             await Promise.all(selectedUsers.map(id => {
                 const user = users.find(u => u.id === id);
-                return adminAPI.updateUser(id, { is_active: !user.is_active });
+                if (user.username === 'admin') return Promise.resolve();
+                return adminAPI.toggleUserActive(id);
             }));
             success('Status für ausgewählte Benutzer geändert');
             setSelectedUsers([]);
@@ -893,7 +1028,21 @@ function Admin() {
                                                             }}
                                                         />
                                                     </td>
-                                                    <td style={{ fontWeight: 600 }}>{user.username}</td>
+                                                    <td style={{ fontWeight: 600 }}>
+                                                        <button
+                                                            onClick={() => { setSelectedDetailUser(user); setShowUserDetailModal(true); }}
+                                                            className="btn-link"
+                                                            style={{
+                                                                fontWeight: 600,
+                                                                padding: 0,
+                                                                border: 'none',
+                                                                background: 'none',
+                                                                color: user.username === 'admin' ? 'var(--color-primary)' : 'inherit'
+                                                            }}
+                                                        >
+                                                            {user.username} {user.username === 'admin' && <span className="badge badge-admin" style={{ fontSize: '9px', marginLeft: '4px' }}>System</span>}
+                                                        </button>
+                                                    </td>
                                                     <td>{user.first_name} {user.last_name || '-'}</td>
                                                     <td className="text-muted">{user.email}</td>
                                                     <td>
@@ -926,6 +1075,9 @@ function Admin() {
                                                                     <button
                                                                         onClick={() => toggleUserActive(user)}
                                                                         className="dropdown-item"
+                                                                        disabled={user.username === 'admin'}
+                                                                        style={user.username === 'admin' ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                                                        title={user.username === 'admin' ? "Der Administrator kann nicht deaktiviert werden" : ""}
                                                                     >
                                                                         {user.is_active ? <FiUserX /> : <FiUserCheck />}
                                                                         {user.is_active ? 'Deaktivieren' : 'Aktivieren'}
@@ -951,7 +1103,9 @@ function Admin() {
                                                                     <button
                                                                         onClick={() => deleteUser(user)}
                                                                         className="dropdown-item"
-                                                                        style={{ color: 'var(--color-error)' }}
+                                                                        style={user.username === 'admin' ? { opacity: 0.5, cursor: 'not-allowed', color: 'var(--color-text-secondary)' } : { color: 'var(--color-error)' }}
+                                                                        disabled={user.username === 'admin'}
+                                                                        title={user.username === 'admin' ? "Der Administrator kann nicht gelöscht werden" : ""}
                                                                     >
                                                                         <FiTrash2 /> Löschen
                                                                     </button>
@@ -1372,7 +1526,7 @@ function Admin() {
                                                 type="text"
                                                 className="form-input"
                                                 value={settings.org_name || ''}
-                                                onChange={(e) => setSettings({ ...settings, org_name: e.target.value })}
+                                                onChange={(e) => updateSettingsState({ org_name: e.target.value })}
                                                 placeholder="z.B. Thomas-Mann-Schule"
                                             />
                                             <p className="text-muted text-small mt-sm">
@@ -1428,9 +1582,33 @@ function Admin() {
                                                     <label htmlFor="logo-upload" className="btn btn-secondary btn-sm">
                                                         Logo hochladen
                                                     </label>
+                                                    {settings.logo_path && (
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-outline btn-sm"
+                                                            style={{ marginLeft: 'var(--space-sm)', color: 'var(--color-error)', borderColor: 'var(--color-error)' }}
+                                                            onClick={handleDeleteLogo}
+                                                        >
+                                                            Logo entfernen
+                                                        </button>
+                                                    )}
                                                     <p className="text-muted text-small mt-xs">Empfohlen: Quadratisch, PNG oder SVG.</p>
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        <div className="form-group mt-xl">
+                                            <label className="form-label">System-URL (Domain)</label>
+                                            <input
+                                                type="url"
+                                                className="form-input"
+                                                value={settings.base_url || ''}
+                                                onChange={(e) => updateSettingsState({ base_url: e.target.value })}
+                                                placeholder="https://deine-schule.de"
+                                            />
+                                            <p className="text-muted text-small mt-sm">
+                                                Diese URL wird für QR-Codes und das Info-Blatt verwendet. Standard: Aktuelle Browser-URL.
+                                            </p>
                                         </div>
 
                                         <div style={{ marginTop: 'var(--space-lg)' }}>
@@ -1480,8 +1658,19 @@ function Admin() {
                             {modalType === 'user' && (
                                 <div className="form-group">
                                     <label className="form-label">Passwort *</label>
-                                    <input type="password" className="form-input" value={userForm.password}
-                                        onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} required minLength="6" />
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input type="password" className="form-input" value={userForm.password}
+                                            onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} required minLength="6" />
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary btn-sm"
+                                            onClick={() => handleGeneratePassword('userForm')}
+                                            title="Passwort generieren"
+                                        >
+                                            <FiRefreshCcw />
+                                        </button>
+                                    </div>
+                                    <p className="text-muted text-small mt-xs">Klicken Sie auf den Button, um ein sicheres Passwort zu generieren.</p>
                                 </div>
                             )}
                             <div className="form-group">
@@ -1649,6 +1838,112 @@ function Admin() {
                                     placeholder="z.B. 30" />
                             </div>
                         </form>
+                    </Modal>
+                )
+            }
+
+            {/* User Detail Modal */}
+            {
+                showUserDetailModal && selectedDetailUser && (
+                    <Modal
+                        isOpen={showUserDetailModal}
+                        onClose={() => { setShowUserDetailModal(false); setSelectedDetailUser(null); }}
+                        title={`Benutzerprofil: ${selectedDetailUser.username}`}
+                        footer={
+                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                                <button
+                                    onClick={() => generateUserPDF(selectedDetailUser)}
+                                    className="btn btn-secondary"
+                                    title="Zugangsdaten als PDF exportieren"
+                                >
+                                    <FiDownload /> PDF Info-Blatt
+                                </button>
+                                <button onClick={() => setShowUserDetailModal(false)} className="btn btn-primary">Schließen</button>
+                            </div>
+                        }
+                    >
+                        <div className="user-detail-view">
+                            <div className="detail-section">
+                                <h4 className="detail-title"><FiUsers /> Stammdaten</h4>
+                                <div className="detail-grid">
+                                    <div className="detail-item">
+                                        <label>Vollständiger Name</label>
+                                        <span>{selectedDetailUser.first_name || '-'} {selectedDetailUser.last_name || ''}</span>
+                                    </div>
+                                    <div className="detail-item">
+                                        <label>Benutzername</label>
+                                        <span>{selectedDetailUser.username}</span>
+                                    </div>
+                                    <div className="detail-item">
+                                        <label>E-Mail</label>
+                                        <span>{selectedDetailUser.email || <em className="text-muted">Keine hinterlegt</em>}</span>
+                                    </div>
+                                    <div className="detail-item">
+                                        <label>Erstellt am</label>
+                                        <span>{new Date(selectedDetailUser.created_at).toLocaleDateString('de-DE')}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="detail-section mt-xl">
+                                <h4 className="detail-title"><FiShield /> Rollen & Berechtigungen</h4>
+                                <div className="mb-md">
+                                    <label className="form-label">Zugeordnete Rollen</label>
+                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                        {selectedDetailUser.roles && selectedDetailUser.roles.map(role => (
+                                            <span key={role} className={`badge ${getRoleBadgeClass(role)}`}>
+                                                {role}
+                                            </span>
+                                        ))}
+                                        {(!selectedDetailUser.roles || selectedDetailUser.roles.length === 0) && <span className="text-muted">Keine Rollen</span>}
+                                    </div>
+                                </div>
+
+                                <button
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => { setShowUserDetailModal(false); openEditUserModal(selectedDetailUser); }}
+                                >
+                                    <FiEdit2 /> Rollen bearbeiten
+                                </button>
+
+                                <div className="mt-lg">
+                                    <label className="form-label">Zusätzliche Berechtigungen</label>
+                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                        {selectedDetailUser.permissions && selectedDetailUser.permissions.map(perm => (
+                                            <span key={perm} className="badge badge-outline" style={{ fontSize: '11px' }}>
+                                                {permissionLabels[perm] || perm}
+                                            </span>
+                                        ))}
+                                        {(!selectedDetailUser.permissions || selectedDetailUser.permissions.length === 0) && <span className="text-muted text-small">Keine direkten Berechtigungen</span>}
+                                    </div>
+                                    <button
+                                        className="btn btn-secondary btn-sm mt-sm"
+                                        onClick={() => { setShowUserDetailModal(false); openUserPermissionsModal(selectedDetailUser); }}
+                                    >
+                                        <FiLock /> Berechtigungen verwalten
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="detail-section mt-xl" style={{ borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-lg)' }}>
+                                <h4 className="detail-title"><FiKey /> Sicherheit</h4>
+                                <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+                                    <button
+                                        className="btn btn-secondary"
+                                        onClick={() => { setShowUserDetailModal(false); openResetModal(selectedDetailUser.id); }}
+                                    >
+                                        <FiKey /> Passwort zurücksetzen
+                                    </button>
+                                    <button
+                                        className={`btn ${selectedDetailUser.is_active ? 'btn-danger' : 'btn-success'}`}
+                                        onClick={() => { toggleUserActive(selectedDetailUser); setShowUserDetailModal(false); }}
+                                    >
+                                        {selectedDetailUser.is_active ? <FiUserX /> : <FiUserCheck />}
+                                        {selectedDetailUser.is_active ? 'Konto deaktivieren' : 'Konto aktivieren'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </Modal>
                 )
             }

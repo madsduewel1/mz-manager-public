@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { FiUser, FiLock, FiAlertCircle, FiMonitor, FiSun, FiMoon } from 'react-icons/fi';
+import { useSettings } from '../contexts/SettingsContext';
 
 function Login({ onLogin }) {
     const [username, setUsername] = useState('');
@@ -11,6 +12,7 @@ function Login({ onLogin }) {
     const [requirePasswordChange, setRequirePasswordChange] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const { settings } = useSettings();
     const navigate = useNavigate();
 
     const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
@@ -93,9 +95,17 @@ function Login({ onLogin }) {
             <div style={styles.card}>
                 <div style={styles.header}>
                     <div style={styles.logoWrapper}>
-                        <FiMonitor size={32} color="var(--color-text-on-primary)" />
+                        {settings.logo_path ? (
+                            <img
+                                src={`/uploads/${settings.logo_path}`}
+                                alt="Logo"
+                                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                            />
+                        ) : (
+                            <FiMonitor size={32} color="var(--color-text-on-primary)" />
+                        )}
                     </div>
-                    <h1 style={styles.headerTitle}>MZ-Manager</h1>
+                    <h1 style={styles.headerTitle}>{settings.org_name || 'MZ-Manager'}</h1>
                     <p style={styles.subtitle}>Medienzentrum Management System</p>
                 </div>
 

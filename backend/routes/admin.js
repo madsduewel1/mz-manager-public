@@ -259,11 +259,13 @@ router.get('/export/qr-pdf/:id', authMiddleware, requirePermission('assets.view'
         // Fetch Org Name & Logo from settings
         let orgName = 'MZ-MANAGER';
         let logoPath = null;
+        let settingsBaseUrl = null;
         try {
             const [settingsRows] = await pool.query('SELECT * FROM settings');
             settingsRows.forEach(row => {
                 if (row.setting_key === 'org_name') orgName = row.setting_value;
                 if (row.setting_key === 'logo_path') logoPath = row.setting_value;
+                if (row.setting_key === 'base_url') settingsBaseUrl = row.setting_value;
             });
         } catch (sError) {
             console.warn('Settings table missing or error');
@@ -293,7 +295,7 @@ router.get('/export/qr-pdf/:id', authMiddleware, requirePermission('assets.view'
             title = `QR-Codes: ${typeLabel} ${container.name}`;
         }
 
-        const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
+        const baseUrl = settingsBaseUrl || process.env.BASE_URL || 'http://localhost:5173';
 
         // 3. Create PDF
         const doc = new PDFDocument({ margin: 30, size: 'A4' });
@@ -334,8 +336,8 @@ router.get('/export/qr-pdf/:id', authMiddleware, requirePermission('assets.view'
             // Generate QR Code Buffer
             const qrBuffer = await generateQRCodeBuffer(item.qr_code, baseUrl);
 
-            // Draw Label background/border
-            doc.rect(x, y, colWidth - 8, rowHeight - 8).lineWidth(0.1).strokeColor('#cccccc').stroke();
+            // Draw Label background/border (Thicker border for easier cutting)
+            doc.rect(x, y, colWidth - 8, rowHeight - 8).lineWidth(1.5).strokeColor('#666666').stroke();
 
             // Add QR to PDF
             doc.image(qrBuffer, x + 5, y + 8, { width: qrSize });
@@ -343,26 +345,23 @@ router.get('/export/qr-pdf/:id', authMiddleware, requirePermission('assets.view'
             // Right side info
             const infoX = x + textStartX;
 
-            // Branding: MZ MANAGER (Larger)
-            doc.fontSize(14).font('Helvetica-Bold').fillColor('#e11d48').text('MZ', infoX, y + 6);
-            doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000').text('MANAGER', infoX, y + 20);
+            // Branding: MZ MANAGER (Smaller and more subtle)
+            doc.fontSize(10).font('Helvetica-Bold').fillColor('#e11d48').text('MZ', infoX, y + 10);
+            doc.fontSize(7).font('Helvetica-Bold').fillColor('#000000').text('MANAGER', infoX, y + 20);
 
-            // Optional Logo (shifted right if present)
-            if (logoPath) {
-                const fullLogoPath = path.join(__dirname, '..', 'uploads', logoPath);
-                if (fs.existsSync(fullLogoPath)) {
-                    doc.image(fullLogoPath, infoX + 65, y + 6, { width: logoSize + 5 });
-                }
-            }
+            // LOGO REMOVED FROM LABELS PER USER REQUEST
+
+            // Organization Name (Prominent)
+            doc.fontSize(9).font('Helvetica-Bold').fillColor('#333333').text(orgName.toUpperCase(), infoX, y + 30, { width: colWidth - textStartX - 15, height: 12, ellipsis: true });
 
             // Separator line
-            doc.moveTo(infoX, y + 36).lineTo(x + colWidth - 15, y + 36).lineWidth(0.5).strokeColor('#e11d48').stroke();
+            doc.moveTo(infoX, y + 42).lineTo(x + colWidth - 15, y + 42).lineWidth(0.5).strokeColor('#e11d48').stroke();
 
             // Item Name
-            doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000').text(item.label, infoX, y + 42, { width: colWidth - textStartX - 15 });
+            doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000').text(item.label, infoX, y + 48, { width: colWidth - textStartX - 15 });
 
             // Item Type/Model
-            doc.fontSize(7).font('Helvetica').fillColor('#444444').text(item.sublabel, infoX, y + 54, { width: colWidth - textStartX - 15 });
+            doc.fontSize(7).font('Helvetica').fillColor('#444444').text(item.sublabel, infoX, y + 60, { width: colWidth - textStartX - 15 });
 
             // QR-ID (Bottom right)
             doc.fontSize(6).font('Helvetica').fillColor('#888888').text(item.qr_code, infoX, y + rowHeight - 22);

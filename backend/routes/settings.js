@@ -28,8 +28,8 @@ const upload = multer({
     }
 });
 
-// Get all settings
-router.get('/', authMiddleware, async (req, res) => {
+// Get all settings (Public for branding on login page)
+router.get('/', async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM settings');
         const settings = rows.reduce((acc, row) => {
@@ -47,12 +47,19 @@ router.get('/', authMiddleware, async (req, res) => {
 // Update settings
 router.post('/', authMiddleware, requirePermission('all'), async (req, res) => {
     try {
-        const { org_name } = req.body;
+        const { org_name, base_url } = req.body;
 
         if (org_name !== undefined) {
             await pool.query(
                 'INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
                 ['org_name', org_name, org_name]
+            );
+        }
+
+        if (base_url !== undefined) {
+            await pool.query(
+                'INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
+                ['base_url', base_url, base_url]
             );
         }
 
@@ -78,6 +85,27 @@ router.post('/logo', authMiddleware, requirePermission('all'), upload.single('lo
     } catch (error) {
         console.error('Logo upload error:', error);
         res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// Delete Logo
+router.delete('/logo', authMiddleware, requirePermission('all'), async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT setting_value FROM settings WHERE setting_key = ?', ['logo_path']);
+
+        if (rows.length > 0 && rows[0].setting_value) {
+            const logoPath = path.join(__dirname, '..', 'uploads', rows[0].setting_value);
+            if (fs.existsSync(logoPath)) {
+                fs.unlinkSync(logoPath);
+            }
+        }
+
+        await pool.query('DELETE FROM settings WHERE setting_key = ?', ['logo_path']);
+
+        res.json({ message: 'Logo erfolgreich entfernt' });
+    } catch (error) {
+        console.error('Delete logo error:', error);
+        res.status(500).json({ error: 'Serverfehler beim Löschen des Logos' });
     }
 });
 

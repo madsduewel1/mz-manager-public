@@ -12,6 +12,7 @@
   --color-warning: hsl(38, 90%, 45%);
   --color-error: hsl(0, 75%, 50%);
   --color-info: hsl(0, 0%, 30%);
+  --color-bg-lighter: hsl(0, 0%, 95%);
   /* Light Theme Colors (Clean neutral palette) */
   --color-bg-dark: hsl(0, 0%, 98%);
   --color-bg-medium: hsl(0, 0%, 100%);
@@ -102,6 +103,7 @@
   --color-primary: hsl(0, 0%, 95%);
   --color-primary-hover: hsl(0, 0%, 100%);
   --color-primary-light: hsl(0, 0%, 80%);
+  --color-bg-lighter: hsl(210, 10%, 25%);
 
   --color-success: hsl(142, 70%, 55%);
   --color-warning: hsl(38, 95%, 60%);
@@ -159,9 +161,30 @@
   color: hsl(200, 80%, 75%);
 }
 
+[data-theme='dark'] .badge-info {
+  background: hsla(0, 0%, 100%, 0.15);
+  color: hsl(0, 0%, 95%);
+}
+
+[data-theme='dark'] .btn-secondary {
+  background: var(--color-bg-lighter);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+[data-theme='dark'] .btn-secondary:hover:not(:disabled) {
+  background: hsl(210, 10%, 30%);
+  border-color: var(--color-border-light);
+}
+
 /* Contrast Fix for Dark Mode Primary Elements */
 [data-theme='dark'] .btn-primary,
-[data-theme='dark'] .activeLink {
+[data-theme='dark'] .activeLink,
+[data-theme='dark'] .admin-sidebar-item.active {
+  color: hsl(0, 0%, 5%) !important;
+}
+
+[data-theme='dark'] .admin-sidebar-item.active svg {
   color: hsl(0, 0%, 5%) !important;
 }
 
@@ -712,9 +735,66 @@ a:hover {
   opacity: 0.5;
 }
 
-/* ===================================
-   Animations
-   =================================== */
+/* User Detail View */
+.user-detail-view {
+  padding: var(--space-md) 0;
+}
+
+.detail-section {
+  background: var(--color-bg-medium);
+  border-radius: var(--radius-md);
+}
+
+.detail-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-primary);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xl) var(--space-lg);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-item label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+}
+
+.detail-item span {
+  font-size: 15px;
+  color: var(--color-text-primary);
+}
+
+.btn-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: var(--transition-base);
+  cursor: pointer;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+/* =================================== */
+/* 9. Animations */
+/* =================================== */
 
 @keyframes fadeIn {
   from {

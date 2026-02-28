@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fi';
 import { getUser, logout, hasRole, hasPermission, hasAdminPermission, hasAnyPermissions } from '../utils/auth';
 import { authAPI } from '../services/api';
+import { useSettings } from '../contexts/SettingsContext';
 
 const DEFAULT_MENU_ORDER = [
     'dashboard',
@@ -36,25 +37,13 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
         return saved ? JSON.parse(saved) : DEFAULT_MENU_ORDER;
     });
     const [draggedItem, setDraggedItem] = useState(null);
-    const [orgName, setOrgName] = useState('Thomas-Mann-Schule');
-    const [logoPath, setLogoPath] = useState(null);
+    const { settings } = useSettings();
+    const { org_name: orgName, logo_path: logoPath } = settings;
 
     // Update local state when localStorage changes or on mount
     useEffect(() => {
         const theme = localStorage.getItem('theme');
         setDarkMode(theme === 'dark');
-
-        // Fetch Org Name
-        const fetchSettings = async () => {
-            try {
-                const response = await authAPI.get('/settings');
-                setOrgName(response.data.org_name || 'MZ-MANAGER');
-                setLogoPath(response.data.logo_path || null);
-            } catch (err) {
-                console.warn('Failed to fetch org name');
-            }
-        };
-        fetchSettings();
     }, []);
 
     const isActive = (path) => {

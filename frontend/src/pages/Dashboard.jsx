@@ -4,6 +4,7 @@ import { FiAlertCircle, FiClock, FiPackage, FiBox, FiRepeat, FiMapPin, FiCheck }
 import { dashboardAPI } from '../services/api';
 import { getUser, hasPermission, hasRole, hasAnyPermissions, hasAdminPermission } from '../utils/auth';
 import { useNotification } from '../contexts/NotificationContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 function Dashboard() {
     const [stats, setStats] = useState(null);
@@ -11,6 +12,7 @@ function Dashboard() {
     const [error, setError] = useState('');
     const user = getUser();
     const { info } = useNotification();
+    const { settings } = useSettings();
 
     useEffect(() => {
         loadDashboard();
@@ -72,7 +74,7 @@ function Dashboard() {
                     <div>
                         <h3 style={{ margin: '0 0 4px', color: 'var(--color-text-primary)' }}>Kein Zugriff konfiguriert</h3>
                         <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
-                            Der MZ-Manager muss von einem Administrator konfiguriert werden damit du ihn nutzen kannst.
+                            {settings.org_name || 'MZ-Manager'} muss von einem Administrator konfiguriert werden damit du ihn nutzen kannst.
                         </p>
                     </div>
                 </div>
