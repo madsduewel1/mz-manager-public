@@ -27,7 +27,7 @@ require('dotenv').config({ path: '../backend/.env' });
   });
   try {
     console.log('  - Prüfe Spalte initial_password...');
-    const [cols] = await pool.query('SHOW COLUMNS FROM users LIKE "initial_password"');
+    const [cols] = await pool.query('SHOW COLUMNS FROM users LIKE \"initial_password\"');
     if (cols.length === 0) {
       await pool.query('ALTER TABLE users ADD COLUMN initial_password VARCHAR(255) AFTER theme');
       console.log('  ✅ Spalte initial_password hinzugefügt');
@@ -38,7 +38,7 @@ require('dotenv').config({ path: '../backend/.env' });
     console.log('  ✅ E-Mail Spalte angepasst');
 
     console.log('  - Prüfe Error-System Tabellen...');
-    const [tables] = await pool.query('SHOW TABLES LIKE "error_report_comments"');
+    const [tables] = await pool.query('SHOW TABLES LIKE \"error_report_comments\"');
     if (tables.length === 0) {
       const fs = require('fs');
       const path = require('path');
