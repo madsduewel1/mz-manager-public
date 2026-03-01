@@ -176,9 +176,10 @@ router.get('/me', authMiddleware, async (req, res) => {
         const [users] = await pool.query(`
             SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.created_at,
                    u.requires_password_change, u.has_seen_onboarding, u.is_active, u.theme,
-                   GROUP_CONCAT(DISTINCT ur.role_name) as roles_list
+                   GROUP_CONCAT(DISTINCT r.name) as roles_list
             FROM users u
             LEFT JOIN user_roles ur ON u.id = ur.user_id
+            LEFT JOIN roles r ON ur.role_id = r.id
             WHERE u.id = ?
             GROUP BY u.id
         `, [req.user.id]);

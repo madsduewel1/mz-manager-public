@@ -75,7 +75,11 @@ export const errorsAPI = {
     submitPublic: (formData) => axios.post('/api/errors/public', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-    update: (id, data) => api.put(`/errors/${id}`, data)
+    update: (id, data) => api.put(`/errors/${id}`, data),
+    getEligibleUsers: () => api.get('/errors/eligible-users'),
+    getFeed: (id) => api.get(`/errors/${id}/feed`),
+    addComment: (id, comment) => api.post(`/errors/${id}/comments`, { comment }),
+    delete: (id) => api.delete(`/errors/${id}`)
 };
 
 // Dashboard API

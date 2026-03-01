@@ -35,25 +35,53 @@ const upload = multer({
 // Get all error reports (authenticated users only)
 router.get('/', authMiddleware, async (req, res) => {
     try {
-        const { status } = req.query;
+        const { status, priority, assigned_to, search, archived } = req.query;
 
         let query = `
       SELECT er.*, 
              a.inventory_number as asset_inventory,
              a.type as asset_type,
              c.name as container_name,
-             u.username as assigned_to_name
+             u.username as assigned_to_name,
+             u2.username as reporter_name_from_user
       FROM error_reports er
       LEFT JOIN assets a ON er.asset_id = a.id
       LEFT JOIN containers c ON er.container_id = c.id
       LEFT JOIN users u ON er.assigned_to = u.id
+      LEFT JOIN users u2 ON er.created_by = u2.id
       WHERE 1=1
     `;
         const params = [];
 
+        if (archived === 'true') {
+            query += ' AND er.archived_at IS NOT NULL';
+        } else {
+            query += ' AND er.archived_at IS NULL';
+        }
+
         if (status) {
             query += ' AND er.status = ?';
             params.push(status);
+        }
+
+        if (priority) {
+            query += ' AND er.priority = ?';
+            params.push(priority);
+        }
+
+        if (assigned_to) {
+            if (assigned_to === 'none') {
+                query += ' AND er.assigned_to IS NULL';
+            } else {
+                query += ' AND er.assigned_to = ?';
+                params.push(assigned_to);
+            }
+        }
+
+        if (search) {
+            query += ' AND (er.description LIKE ? OR er.reporter_name LIKE ? OR a.inventory_number LIKE ?)';
+            const searchTerm = `%${search}%`;
+            params.push(searchTerm, searchTerm, searchTerm);
         }
 
         query += ' ORDER BY er.created_at DESC';
@@ -63,6 +91,63 @@ router.get('/', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Get error reports error:', error);
         res.status(500).json({ error: 'Serverfehler beim Abrufen der Fehlermeldungen' });
+    }
+});
+
+// NEW: Get users eligible for assignment (mediencoach or admin)
+router.get('/eligible-users', authMiddleware, async (req, res) => {
+    try {
+        const [users] = await pool.query(`
+      SELECT DISTINCT u.id, u.username, u.first_name, u.last_name
+      FROM users u
+      JOIN user_roles ur ON u.id = ur.user_id
+      JOIN role_permissions rp ON ur.role_id = rp.role_id
+      WHERE (rp.permission = 'errors.manage' OR rp.permission = 'all')
+      AND u.username != 'admin' -- Do not assign to system admin
+      ORDER BY u.username
+    `);
+        res.json(users);
+    } catch (error) {
+        console.error('Get eligible users error:', error);
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// NEW: Get activity feed for a report (comments + system events)
+router.get('/:id/feed', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [comments] = await pool.query(`
+      SELECT c.*, u.username, u.first_name, u.last_name
+      FROM error_report_comments c
+      LEFT JOIN users u ON c.user_id = u.id
+      WHERE c.report_id = ?
+      ORDER BY c.created_at ASC
+    `, [id]);
+        res.json(comments);
+    } catch (error) {
+        console.error('Get feed error:', error);
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// NEW: Add a comment to a report
+router.post('/:id/comments', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { comment } = req.body;
+
+        if (!comment) return res.status(400).json({ error: 'Kommentar fehlt' });
+
+        await pool.query(
+            'INSERT INTO error_report_comments (report_id, user_id, comment, is_system) VALUES (?, ?, ?, FALSE)',
+            [id, req.user.id, comment]
+        );
+
+        res.status(201).json({ message: 'Kommentar hinzugefügt' });
+    } catch (error) {
+        console.error('Add comment error:', error);
+        res.status(500).json({ error: 'Serverfehler' });
     }
 });
 
@@ -228,23 +313,114 @@ router.post('/public', upload.single('photo'), async (req, res) => {
     }
 });
 
-// Update error report status
+// Update error report (Take/Transfer/Status/Priority/Archive)
 router.put('/:id', authMiddleware, requirePermission('errors.manage'), async (req, res) => {
+    const connection = await pool.getConnection();
     try {
         const { id } = req.params;
-        const { status, priority, assigned_to, resolution_notes } = req.body;
+        const { status, priority, assigned_to, resolution_notes, archived } = req.body;
+        const userId = req.user.id;
 
-        await pool.query(
-            `UPDATE error_reports 
-       SET status = ?, priority = ?, assigned_to = ?, resolution_notes = ?
-       WHERE id = ?`,
-            [status, priority, assigned_to, resolution_notes, id]
-        );
+        await connection.beginTransaction();
 
-        res.json({ message: 'Fehlermeldung erfolgreich aktualisiert' });
+        // Get current state for history
+        const [currRows] = await connection.query('SELECT * FROM error_reports WHERE id = ?', [id]);
+        if (currRows.length === 0) return res.status(404).json({ error: 'Meldung nicht gefunden' });
+        const current = currRows[0];
+
+        let updates = [];
+        let params = [];
+        let systemMessages = [];
+
+        // Automation: If status becomes in_bearbeitung and no assignee is provided in body or current, assign to current user
+        let finalAssignedTo = assigned_to !== undefined ? assigned_to : current.assigned_to;
+
+        if (status === 'in_bearbeitung' && !current.assigned_to && assigned_to === undefined) {
+            finalAssignedTo = userId;
+            systemMessages.push('Ticket automatisch zur Bearbeitung angenommen.');
+        }
+
+        if (status && status !== current.status) {
+            updates.push('status = ?');
+            params.push(status);
+            systemMessages.push(`Status geändert von "${current.status}" auf "${status}".`);
+
+            // If resolved, update asset status back to OK
+            if (status === 'erledigt' && current.asset_id) {
+                await connection.query('UPDATE assets SET status = "ok" WHERE id = ?', [current.asset_id]);
+            }
+        }
+
+        if (priority && priority !== current.priority) {
+            updates.push('priority = ?');
+            params.push(priority);
+            systemMessages.push(`Priorität geändert von "${current.priority}" auf "${priority}".`);
+        }
+
+        if (assigned_to !== undefined && assigned_to != current.assigned_to) {
+            updates.push('assigned_to = ?');
+            params.push(assigned_to);
+
+            if (assigned_to) {
+                const [user] = await connection.query('SELECT username FROM users WHERE id = ?', [assigned_to]);
+                systemMessages.push(`Zuständigkeit übertragen an @${user[0]?.username || 'Unbekannt'}.`);
+            } else {
+                systemMessages.push('Zuständigkeit entfernt.');
+            }
+        } else if (finalAssignedTo !== current.assigned_to && !updates.includes('assigned_to = ?')) {
+            // This handles the automation case where assigned_to wasn't in the body
+            updates.push('assigned_to = ?');
+            params.push(finalAssignedTo);
+        }
+
+        if (resolution_notes !== undefined) {
+            updates.push('resolution_notes = ?');
+            params.push(resolution_notes);
+        }
+
+        if (archived !== undefined) {
+            if (archived) {
+                updates.push('archived_at = CURRENT_TIMESTAMP');
+                systemMessages.push('Meldung wurde archiviert.');
+            } else {
+                updates.push('archived_at = NULL');
+                systemMessages.push('Meldung wurde aus dem Archiv wiederhergestellt.');
+            }
+        }
+
+        if (updates.length > 0) {
+            params.push(id);
+            await connection.query(`UPDATE error_reports SET ${updates.join(', ')} WHERE id = ?`, params);
+
+            // Insert system messages into comments feed
+            for (const msg of systemMessages) {
+                await connection.query(
+                    'INSERT INTO error_report_comments (report_id, user_id, comment, is_system) VALUES (?, NULL, ?, TRUE)',
+                    [id, msg]
+                );
+            }
+        }
+
+        await connection.commit();
+        res.json({ message: 'Erfolgreich aktualisiert' });
     } catch (error) {
-        console.error('Update error report error:', error);
-        res.status(500).json({ error: 'Serverfehler beim Aktualisieren der Fehlermeldung' });
+        if (connection) await connection.rollback();
+        console.error('Update report error:', error);
+        res.status(500).json({ error: 'Serverfehler' });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// Delete error report
+router.delete('/:id', authMiddleware, requirePermission('errors.manage'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM error_reports WHERE id = ?', [id]);
+        res.json({ message: 'Fehlermeldung gelöscht' });
+    } catch (error) {
+        console.error('Delete error report error:', error);
+        res.status(500).json({ error: 'Serverfehler beim Löschen' });
     }
 });
 
