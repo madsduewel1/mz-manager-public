@@ -351,8 +351,8 @@ router.get('/export/qr-pdf/:id', authMiddleware, requirePermission('assets.view'
 
             // LOGO REMOVED FROM LABELS PER USER REQUEST
 
-            // Organization Name (Prominent)
-            doc.fontSize(9).font('Helvetica-Bold').fillColor('#333333').text(orgName.toUpperCase(), infoX, y + 30, { width: colWidth - textStartX - 15, height: 12, ellipsis: true });
+            // Organization Name (Smaller as requested)
+            doc.fontSize(6.5).font('Helvetica-Bold').fillColor('#666666').text(orgName.toUpperCase(), infoX, y + 33, { width: colWidth - textStartX - 15, height: 10, ellipsis: true });
 
             // Separator line
             doc.moveTo(infoX, y + 42).lineTo(x + colWidth - 15, y + 42).lineWidth(0.5).strokeColor('#e11d48').stroke();

@@ -105,7 +105,7 @@ function Login({ onLogin }) {
                             <FiMonitor size={32} color="var(--color-text-on-primary)" />
                         )}
                     </div>
-                    <h1 style={styles.headerTitle}>{settings.org_name || 'MZ-Manager'}</h1>
+                    <h1 style={styles.headerTitle}>MZ-Manager</h1>
                     <p style={styles.subtitle}>Medienzentrum Management System</p>
                 </div>
 
