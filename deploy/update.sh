@@ -27,7 +27,7 @@ require('dotenv').config({ path: '../backend/.env' });
   });
   try {
     console.log('  - Prüfe Spalte initial_password...');
-    const [cols] = await pool.query('SHOW COLUMNS FROM users LIKE \"initial_password\"');
+    const [cols] = await pool.query('SHOW COLUMNS FROM users LIKE "initial_password"');
     if (cols.length === 0) {
       await pool.query('ALTER TABLE users ADD COLUMN initial_password VARCHAR(255) AFTER theme');
       console.log('  ✅ Spalte initial_password hinzugefügt');
@@ -36,7 +36,27 @@ require('dotenv').config({ path: '../backend/.env' });
     console.log('  - Setze E-Mail auf NULLABLE...');
     await pool.query('ALTER TABLE users MODIFY COLUMN email VARCHAR(100) NULL');
     console.log('  ✅ E-Mail Spalte angepasst');
-    
+
+    console.log('  - Prüfe Error-System Tabellen...');
+    const [tables] = await pool.query('SHOW TABLES LIKE "error_report_comments"');
+    if (tables.length === 0) {
+      const fs = require('fs');
+      const path = require('path');
+      const migrationPath = path.join(__dirname, 'database', 'migration_error_system.sql');
+      if (fs.existsSync(migrationPath)) {
+        const sql = fs.readFileSync(migrationPath, 'utf8');
+        // Split by semicolon and filter empty lines to execute multiple queries
+        const queries = sql.split(';').filter(q => q.trim() !== '');
+        for (let q of queries) {
+          await pool.query(q);
+        }
+        console.log('  ✅ Error-System Migration erfolgreich ausgeführt');
+      } else {
+        console.log('  ⚠️ migration_error_system.sql nicht gefunden, springe weiter...');
+      }
+    } else {
+      console.log('  ✅ Error-System Tabellen bereits vorhanden');
+    }
   } catch (e) {
     console.error('  ❌ Migration fehlgeschlagen:', e.message);
     process.exit(1);
