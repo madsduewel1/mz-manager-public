@@ -205,14 +205,6 @@ Authorization: Bearer <jwt-token>
 
 Überprüfe `BASE_URL` in `.env` - muss die öffentliche Domain sein.
 
-## 📝 TODO / Roadmap
-
-- [ ] IServ-Integration
-- [ ] LDAP/UCS-Anbindung
-- [ ] E-Mail-Benachrichtigungen bei Rückgabe-Erinnerungen
-- [ ] Excel-Import für Bulk-Asset-Erstellung
-- [ ] Mobile App für QR-Scanning
-
 ## 📄 Lizenz
 
 MIT License - Open Source
@@ -221,7 +213,7 @@ MIT License - Open Source
 
 Bei Fragen oder Problemen:
 - GitHub Issues erstellen
-- Schulprojekt/AG-Leiter kontaktieren
+e-mail an: kontakt@mz-manager.de
 
 ---
 
