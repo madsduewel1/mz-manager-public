@@ -16,6 +16,7 @@ const DEFAULT_MENU_ORDER = [
     'containers',
     'lendings',
     'error-reports',
+    'network',
     'admin'
 ];
 
@@ -25,6 +26,7 @@ const MENU_ITEMS_DATA = {
     'containers': { path: '/containers', label: 'Container', icon: FiBox, color: '#f97316' },
     'lendings': { path: '/lendings', label: 'Ausleihen', icon: FiRepeat, color: '#8b5cf6' },
     'error-reports': { path: '/error-reports', label: 'Fehlermeldungen', icon: FiAlertCircle, color: '#ef4444', permission: 'errors.manage' },
+    'network': { path: '/network', label: 'Netzwerk', icon: FiRepeat, color: '#10b981', permission: 'network.view', moduleKey: 'module_network_enabled' },
     'admin': { path: '/admin', label: 'Verwaltung', icon: FiSettings, color: '#6b7280', adminOnly: true }
 };
 
@@ -126,6 +128,9 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
         if (item.adminOnly && !(hasRole('Administrator') || hasAdminPermission())) return null;
         if (item.permission && !hasPermission(item.permission)) return null;
         if (id !== 'dashboard' && !hasAnyPermissions()) return null;
+
+        // Check if module is enabled
+        if (item.moduleKey && settings[item.moduleKey] !== 'true') return null;
 
         const Icon = item.icon;
         const active = isActive(item.path);

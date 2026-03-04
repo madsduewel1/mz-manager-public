@@ -700,7 +700,8 @@ const Admin = ({ defaultTab }) => {
         'roles.view', 'roles.manage', 'roles.create', 'roles.edit', 'roles.delete',
         'models.view', 'models.manage', 'models.create', 'models.edit', 'models.delete',
         'rooms.view', 'rooms.manage', 'rooms.create', 'rooms.edit', 'rooms.delete',
-        'qr.print', 'logs.view'
+        'qr.print', 'logs.view',
+        'network.view', 'network.edit', 'network.assign_vlan', 'network.manage_ips', 'network.admin'
     ];
 
     const permissionLabels = {
@@ -743,7 +744,12 @@ const Admin = ({ defaultTab }) => {
         'rooms.edit': 'Räume bearbeiten',
         'rooms.delete': 'Räume löschen',
         'qr.print': 'QR-Codes drucken',
-        'logs.view': 'Logs einsehen'
+        'logs.view': 'Logs einsehen',
+        'network.view': 'Netzwerk ansehen',
+        'network.edit': 'Netzwerk bearbeiten',
+        'network.assign_vlan': 'VLANs zuweisen',
+        'network.manage_ips': 'IPs verwalten',
+        'network.admin': 'Netzwerk Admin (VLANs erstellen/löschen)'
     };
 
     const permissionGroups = [
@@ -770,6 +776,10 @@ const Admin = ({ defaultTab }) => {
         {
             name: 'Benutzer & Rollen',
             perms: ['users.view', 'users.create', 'users.edit', 'users.delete', 'roles.view', 'roles.create', 'roles.edit', 'roles.delete']
+        },
+        {
+            name: 'Netzwerk',
+            perms: ['network.view', 'network.edit', 'network.assign_vlan', 'network.manage_ips', 'network.admin']
         }
     ];
 
@@ -1554,8 +1564,8 @@ const Admin = ({ defaultTab }) => {
                                         <input
                                             type="text"
                                             className="form-input"
-                                            value={settings.org_name || ''}
-                                            onChange={(e) => updateSettingsState({ org_name: e.target.value })}
+                                            value={settingsForm.org_name || ''}
+                                            onChange={(e) => setSettingsForm({ ...settingsForm, org_name: e.target.value })}
                                             placeholder="z.B. Thomas-Mann-Schule"
                                         />
                                         <p className="text-muted text-small mt-sm">

@@ -17,6 +17,7 @@ import Lendings from './pages/Lendings';
 import ErrorReports from './pages/ErrorReports';
 import PublicErrorReport from './pages/PublicErrorReport';
 import Admin from './pages/Admin';
+import Network from './pages/Network';
 
 import Sidebar from './components/Sidebar';
 import Breadcrumbs from './components/Breadcrumbs';
@@ -170,6 +171,7 @@ function App() {
                                                         <Route path="/containers/:id" element={<ContainerDetail />} />
                                                         <Route path="/lendings" element={<Lendings />} />
                                                         <Route path="/error-reports" element={<ErrorReports />} />
+                                                        <Route path="/network" element={<Network />} />
                                                         <Route path="/admin" element={<Admin />} />
                                                         <Route path="/admin/users" element={<Admin defaultTab="users" />} />
                                                         <Route path="/admin/roles" element={<Admin defaultTab="roles" />} />

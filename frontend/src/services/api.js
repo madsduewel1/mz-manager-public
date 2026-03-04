@@ -116,4 +116,13 @@ export const adminAPI = {
     removeUserPermission: (userId, permission) => api.delete(`/users/${userId}/permissions/${permission}`)
 };
 
+// Network API
+export const networkAPI = {
+    getDevices: () => api.get('/network/devices'),
+    getVlans: () => api.get('/network/vlans'),
+    saveVlan: (data) => api.post('/network/vlans', data),
+    deleteVlan: (id) => api.delete(`/network/vlans/${id}`),
+    assignDevice: (data) => api.post('/network/assign', data)
+};
+
 export default api;
