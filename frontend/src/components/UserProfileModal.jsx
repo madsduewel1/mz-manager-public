@@ -43,20 +43,56 @@ function UserProfileModal({ isOpen, onClose, user }) {
     };
 
     const permissionLabels = {
+        // Special
         'all': 'Vollzugriff (Administrator)',
-        'assets.manage': 'Geräte verwalten',
+        // Geräte
         'assets.view': 'Geräte ansehen',
-        'containers.manage': 'Container verwalten',
-        'errors.manage': 'Fehler verwalten',
-        'errors.create': 'Fehler melden',
-        'lendings.manage': 'Ausleihen verwalten',
+        'assets.create': 'Geräte hinzufügen',
+        'assets.edit': 'Geräte bearbeiten',
+        'assets.delete': 'Geräte löschen',
+        'assets.history': 'Geräteverlauf einsehen',
+        // Container
+        'containers.view': 'Container ansehen',
+        'containers.create': 'Container erstellen',
+        'containers.edit': 'Container bearbeiten',
+        'containers.delete': 'Container löschen',
+        // Fehlermeldungen
+        'errors.view': 'Fehlermeldungen ansehen',
+        'errors.create': 'Fehlermeldungen melden',
+        'errors.edit': 'Fehlermeldungen bearbeiten',
+        'errors.delete': 'Fehlermeldungen löschen',
+        // Ausleihe
+        'lendings.view': 'Ausleihen ansehen',
         'lendings.create': 'Ausleihen erstellen',
-        'users.manage': 'Benutzer verwalten',
-        'roles.manage': 'Rollen verwalten',
-        'models.manage': 'Modelle verwalten',
-        'rooms.manage': 'Räume verwalten',
+        'lendings.return': 'Ausleihen zurücknehmen',
+        'lendings.delete': 'Ausleihen löschen',
+        // Benutzer
+        'users.view': 'Benutzer ansehen',
+        'users.create': 'Benutzer erstellen',
+        'users.edit': 'Benutzer bearbeiten',
+        'users.delete': 'Benutzer löschen',
+        // Rollen
+        'roles.view': 'Rollen ansehen',
+        'roles.create': 'Rollen erstellen',
+        'roles.edit': 'Rollen bearbeiten',
+        'roles.delete': 'Rollen löschen',
+        // Gerätemodelle
+        'models.view': 'Gerätemodelle ansehen',
+        'models.create': 'Gerätemodelle erstellen',
+        'models.edit': 'Gerätemodelle bearbeiten',
+        'models.delete': 'Gerätemodelle löschen',
+        // Räume
+        'rooms.view': 'Räume ansehen',
+        'rooms.create': 'Räume erstellen',
+        'rooms.edit': 'Räume bearbeiten',
+        'rooms.delete': 'Räume löschen',
+        // Sonstiges
         'qr.print': 'QR-Codes drucken',
-        'logs.view': 'Logs einsehen'
+        'logs.view': 'Systemlogs einsehen',
+        // Netzwerk
+        'network.view': 'Netzwerk ansehen',
+        'network.edit': 'Netzwerk bearbeiten',
+        'network.admin': 'Netzwerk verwalten (VLANs anlegen/löschen)'
     };
 
     const styles = {
