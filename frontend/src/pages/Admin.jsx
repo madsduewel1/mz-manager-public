@@ -37,6 +37,7 @@ const Admin = ({ defaultTab }) => {
     const [rooms, setRooms] = useState([]);
     const [stats, setStats] = useState(null);
     const { settings, updateSettingsState, refreshSettings } = useSettings();
+    const [settingsForm, setSettingsForm] = useState({ org_name: '', base_url: '', module_network_enabled: 'false' });
     const [showModal, setShowModal] = useState(false);
     const [modalType, setModalType] = useState('');
     const [loading, setLoading] = useState(false);
@@ -118,6 +119,17 @@ const Admin = ({ defaultTab }) => {
         }
     }, [activeTab]);
 
+    // Sync form with settings context when tab changes or settings are loaded
+    useEffect(() => {
+        if (activeTab === 'settings') {
+            setSettingsForm({
+                org_name: settings.org_name || '',
+                base_url: settings.base_url || '',
+                module_network_enabled: settings.module_network_enabled || 'false'
+            });
+        }
+    }, [activeTab, settings.org_name, settings.base_url, settings.module_network_enabled]);
+
     const loadLogs = async () => {
         try {
             const response = await adminAPI.getLogs();
@@ -166,8 +178,8 @@ const Admin = ({ defaultTab }) => {
         if (e) e.preventDefault();
         setSubmitting(true);
         try {
-            await adminAPI.updateSettings(settings);
-            updateSettingsState(settings);
+            await adminAPI.updateSettings(settingsForm);
+            updateSettingsState(settingsForm);
             success('Einstellungen gespeichert');
         } catch (err) {
             error(err.response?.data?.error || 'Fehler beim Speichern der Einstellungen');
@@ -1641,8 +1653,8 @@ const Admin = ({ defaultTab }) => {
                                         <input
                                             type="url"
                                             className="form-input"
-                                            value={settings.base_url || ''}
-                                            onChange={(e) => updateSettingsState({ base_url: e.target.value })}
+                                            value={settingsForm.base_url || ''}
+                                            onChange={(e) => setSettingsForm({ ...settingsForm, base_url: e.target.value })}
                                             placeholder="https://deine-schule.de"
                                         />
                                         <p className="text-muted text-small mt-sm">
@@ -1650,7 +1662,32 @@ const Admin = ({ defaultTab }) => {
                                         </p>
                                     </div>
 
-                                    <div style={{ marginTop: 'var(--space-lg)' }}>
+                                    <div className="form-group" style={{ marginTop: 'var(--space-xl)' }}>
+                                        <h4 style={{ marginBottom: 'var(--space-md)' }}>Zusätzliche Module</h4>
+                                        <label style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 'var(--space-md)',
+                                            padding: 'var(--space-md)',
+                                            border: '1px solid var(--color-border)',
+                                            borderRadius: 'var(--radius-md)',
+                                            cursor: 'pointer',
+                                            background: 'var(--color-bg-medium)',
+                                            transition: 'var(--transition-fast)'
+                                        }} className="hover-bg-light">
+                                            <input
+                                                type="checkbox"
+                                                checked={settingsForm.module_network_enabled === 'true'}
+                                                onChange={(e) => setSettingsForm({ ...settingsForm, module_network_enabled: e.target.checked ? 'true' : 'false' })}
+                                            />
+                                            <div>
+                                                <div style={{ fontWeight: 600 }}>Modul "Netzwerk" aktivieren</div>
+                                                <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>Aktiviert VLAN- und IP-Adressverwaltung</div>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <div style={{ marginTop: 'var(--space-xl)' }}>
                                         <button
                                             type="submit"
                                             className="btn btn-primary"

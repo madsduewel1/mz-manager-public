@@ -69,6 +69,9 @@ export const hasPermission = (...perms) => {
     const user = getUser();
     if (!user) return false;
 
+    // Administrator always has all permissions
+    if (hasRole('Administrator')) return true;
+
     const userPermissions = user.permissions || [];
 
     // 'all' permission grants everything

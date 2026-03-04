@@ -14,7 +14,7 @@ function Network() {
     const [devices, setDevices] = useState([]);
     const [vlans, setVlans] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState('table'); // 'table' or 'vlan'
+    const [activeTab, setActiveTab] = useState('network'); // 'network' or 'vlans'
     const [searchTerm, setSearchTerm] = useState('');
     const [vlanFilter, setVlanFilter] = useState('all');
 
@@ -59,11 +59,16 @@ function Network() {
         }
     };
 
+    const handleImportAssets = () => {
+        loadData();
+        success('Assets wurden aktualisiert');
+    };
+
     const handleVlanSubmit = async (e) => {
         e.preventDefault();
         try {
             await networkAPI.saveVlan(vlanForm);
-            success(vlanForm.id ? 'VLAN aktualisiert' : 'VLAN erstellt');
+            success(vlanForm.id ? 'VLAN-Definition aktualisiert' : 'VLAN-Definition erstellt');
             setShowVlanModal(false);
             loadData();
         } catch (err) {
@@ -97,7 +102,7 @@ function Network() {
                 asset_id: assigningDevice.id,
                 ...assignForm
             });
-            success('Netzwerkkonfiguration gespeichert');
+            success('Geräte-Netzwerkkonfiguration gespeichert');
             setShowAssignModal(false);
             loadData();
         } catch (err) {
@@ -144,12 +149,13 @@ function Network() {
     const filteredDevices = devices.filter(d => {
         const matchesSearch =
             d.inventory_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (d.model || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
             (d.ip_address || '').includes(searchTerm) ||
             (d.mac_address || '').toLowerCase().includes(searchTerm.toLowerCase());
 
         const matchesVlan = vlanFilter === 'all' ||
-            (vlanFilter === 'none' && !d.vlan_id) ||
-            d.vlan_id?.toString() === vlanFilter;
+            (vlanFilter === 'none' && !d.network_vlan_id) ||
+            d.network_vlan_id?.toString() === vlanFilter;
 
         return matchesSearch && matchesVlan;
     });
@@ -183,198 +189,219 @@ function Network() {
             <div className="flex justify-between items-center mb-xl">
                 <div>
                     <h1>Netzwerk-Verwaltung</h1>
-                    <p className="text-muted">VLANs und IP-Adressen zentral verwalten</p>
+                    <p className="text-muted">VLAN-Hierarchie und IP-Zuweisung</p>
                 </div>
                 <div className="flex gap-md">
                     <div className="btn-group">
                         <button
-                            className={`btn btn-sm ${viewMode === 'table' ? 'btn-primary' : 'btn-secondary'}`}
-                            onClick={() => setViewMode('table')}
+                            className={`btn btn-sm ${activeTab === 'network' ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setActiveTab('network')}
                         >
-                            Listenansicht
+                            Netzwerk
                         </button>
                         <button
-                            className={`btn btn-sm ${viewMode === 'vlan' ? 'btn-primary' : 'btn-secondary'}`}
-                            onClick={() => setViewMode('vlan')}
+                            className={`btn btn-sm ${activeTab === 'vlans' ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setActiveTab('vlans')}
                         >
-                            VLAN-Gruppen
-                        </button>
-                    </div>
-                    {hasAdminPermission() && (
-                        <button className="btn btn-primary" onClick={() => openVlanModal()}>
-                            <FiPlus /> VLAN erstellen
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Filters Bar */}
-            <div className="card mb-lg">
-                <div className="flex gap-lg items-center">
-                    <div className="search-wrapper flex-grow">
-                        <FiSearch />
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="Suchen nach Inventarnummer, IP oder MAC..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex gap-md items-center">
-                        <FiFilter className="text-muted" />
-                        <select
-                            className="form-select"
-                            style={{ width: '200px' }}
-                            value={vlanFilter}
-                            onChange={(e) => setVlanFilter(e.target.value)}
-                        >
-                            <option value="all">Alle VLANs</option>
-                            <option value="none">Kein VLAN</option>
-                            {vlans.map(v => (
-                                <option key={v.id} value={v.id}>{v.vlan_id} - {v.name}</option>
-                            ))}
-                        </select>
-                        <button className="btn btn-secondary" title="Exportieren" onClick={exportCSV}>
-                            <FiDownload />
+                            VLANs
                         </button>
                     </div>
                 </div>
             </div>
 
-            {viewMode === 'table' ? (
-                <div className="card p-0 overflow-hidden">
-                    <table className="table">
-                        <thead>
-                            <tr>
-                                <th>Gerät</th>
-                                <th>Inventarnummer</th>
-                                <th>VLAN</th>
-                                <th>IP-Adresse</th>
-                                <th>MAC-Adresse</th>
-                                <th>Anschluss</th>
-                                <th>Rolle</th>
-                                <th>Aktionen</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredDevices.map(device => (
-                                <tr key={device.id}>
-                                    <td>
-                                        <div className="flex items-center gap-sm">
-                                            <span style={{ color: 'var(--color-primary)' }}>{getRoleIcon(device.network_role)}</span>
-                                            <div>
-                                                <div className="font-semibold">{device.model || device.type}</div>
-                                                <div className="text-xs text-muted">{device.location}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td><code>{device.inventory_number}</code></td>
-                                    <td>
-                                        {device.vlan_id ? (
-                                            <span className="badge badge-outline">
-                                                {device.vlan_id}: {device.vlan_name}
-                                            </span>
-                                        ) : (
-                                            <span className="text-muted">-</span>
-                                        )}
-                                    </td>
-                                    <td>
-                                        <div className="flex flex-col">
-                                            <span className="font-mono">{device.ip_address || '-'}</span>
-                                            {device.dhcp_enabled && <span className="text-xs text-info">DHCP</span>}
-                                        </div>
-                                    </td>
-                                    <td><span className="font-mono text-small">{device.mac_address || '-'}</span></td>
-                                    <td>
-                                        {device.switch_name ? (
-                                            <div className="text-xs">
-                                                <div>{device.switch_name}</div>
-                                                <div className="text-muted">Port {device.port_number}</div>
-                                            </div>
-                                        ) : '-'}
-                                    </td>
-                                    <td><span className="badge">{device.network_role}</span></td>
-                                    <td>
-                                        <button className="btn btn-ghost btn-icon" onClick={() => openAssignModal(device)}>
-                                            <FiEdit2 />
-                                        </button>
-                                    </td>
+            {activeTab === 'network' ? (
+                <>
+                    {/* Network Tab Contents */}
+                    <div className="card mb-lg">
+                        <div className="flex justify-between items-center">
+                            <div className="flex gap-md items-center flex-grow">
+                                <div className="search-wrapper" style={{ flexGrow: 1, maxWidth: '500px' }}>
+                                    <FiSearch />
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="Suchen nach Gerät, Inventarnummer, IP oder MAC..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                <select
+                                    className="form-select"
+                                    style={{ width: '200px' }}
+                                    value={vlanFilter}
+                                    onChange={(e) => setVlanFilter(e.target.value)}
+                                >
+                                    <option value="all">Alle VLANs</option>
+                                    <option value="none">Kein VLAN</option>
+                                    {vlans.map(v => (
+                                        <option key={v.id} value={v.id}>{v.vlan_id} - {v.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex gap-md">
+                                <button className="btn btn-secondary" title="Exportieren" onClick={exportCSV}>
+                                    <FiDownload /> Export
+                                </button>
+                                <button className="btn btn-primary" onClick={handleImportAssets}>
+                                    <FiRepeat /> Aktuellste Assets importieren
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card p-0 overflow-hidden">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Gerät</th>
+                                    <th>Inventarnummer</th>
+                                    <th>VLAN</th>
+                                    <th>IP-Adresse</th>
+                                    <th>MAC-Adresse</th>
+                                    <th>Standort / Port</th>
+                                    <th>Status</th>
+                                    <th>Aktionen</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                {filteredDevices.map(device => (
+                                    <tr key={device.id}>
+                                        <td>
+                                            <div className="flex items-center gap-sm">
+                                                <span style={{ color: 'var(--color-primary)' }}>{getRoleIcon(device.network_role)}</span>
+                                                <div>
+                                                    <div className="font-semibold">{device.model || device.type}</div>
+                                                    <div className="text-xs text-muted">{device.network_role}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><code>{device.inventory_number}</code></td>
+                                        <td>
+                                            {device.vlan_name ? (
+                                                <span className="badge badge-outline">
+                                                    VLAN {device.vlan_id}: {device.vlan_name}
+                                                </span>
+                                            ) : (
+                                                <span className="text-muted italic">Nicht zugewiesen</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <div className="flex flex-col">
+                                                <span className="font-mono">{device.ip_address || '-'}</span>
+                                                {device.dhcp_enabled && <span className="text-xs text-info">DHCP</span>}
+                                            </div>
+                                        </td>
+                                        <td><span className="font-mono text-small">{device.mac_address || '-'}</span></td>
+                                        <td>
+                                            <div className="text-xs">
+                                                <div>{device.location || '-'}</div>
+                                                {device.switch_name && <div className="text-muted">{device.switch_name} / {device.port_number}</div>}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className={`badge badge-${device.status?.toLowerCase() === 'ok' ? 'success' : 'warning'}`}>
+                                                {device.status}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openAssignModal(device)}>
+                                                <FiEdit2 />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredDevices.length === 0 && (
+                                    <tr>
+                                        <td colSpan="8" className="text-center py-xl text-muted">Keine Geräte gefunden</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
             ) : (
-                <div className="vlan-groups-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 'var(--space-xl)' }}>
-                    {/* Unassigned Group */}
-                    <div className="vlan-card card" style={{ borderTop: '4px solid var(--color-text-muted)' }}>
-                        <div className="flex justify-between items-center mb-md">
-                            <h3>Nicht zugewiesen</h3>
-                            <span className="badge">{devices.filter(d => !d.vlan_id).length}</span>
-                        </div>
-                        <div className="vlan-device-list" style={{ minHeight: '100px', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-                            {devices.filter(d => !d.vlan_id).slice(0, 10).map(device => (
-                                <div key={device.id} className="device-mini-card p-sm bg-light border radius-md flex justify-between items-center">
-                                    <div className="flex items-center gap-sm">
-                                        {getRoleIcon(device.network_role)}
-                                        <span className="text-small">{device.inventory_number}</span>
-                                    </div>
-                                    <button className="btn btn-ghost btn-xs" onClick={() => openAssignModal(device)}><FiEdit2 /></button>
-                                </div>
-                            ))}
-                            {devices.filter(d => !d.vlan_id).length > 10 && <p className="text-center text-xs text-muted">... und weitere {devices.filter(d => !d.vlan_id).length - 10}</p>}
-                        </div>
+                <>
+                    {/* VLANs Tab Contents */}
+                    <div className="flex justify-between items-center mb-lg">
+                        <h2 style={{ margin: 0 }}>VLAN-Definitionen</h2>
+                        {hasAdminPermission() && (
+                            <button className="btn btn-primary" onClick={() => openVlanModal()}>
+                                <FiPlus /> Neues VLAN anlegen
+                            </button>
+                        )}
                     </div>
 
-                    {/* VLAN Groups */}
-                    {vlans.map(vlan => (
-                        <div key={vlan.id} className="vlan-card card" style={{ borderTop: '4px solid var(--color-primary)' }}>
-                            <div className="flex justify-between items-start mb-md">
-                                <div>
-                                    <h3 style={{ margin: 0 }}>VLAN {vlan.vlan_id}</h3>
-                                    <p className="text-small text-muted">{vlan.name}</p>
-                                    {vlan.subnet && <code className="text-xs">{vlan.subnet}</code>}
-                                </div>
-                                <div className="flex gap-xs">
-                                    {hasAdminPermission() && (
-                                        <>
-                                            <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openVlanModal(vlan)}><FiEdit2 /></button>
-                                            <button className="btn btn-ghost btn-icon btn-sm text-danger" onClick={() => handleDeleteVlan(vlan)}><FiTrash2 /></button>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="vlan-device-list" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-                                {devices.filter(d => d.vlan_id === vlan.vlan_id).map(device => (
-                                    <div key={device.id} className="device-mini-card p-sm bg-light border radius-md">
-                                        <div className="flex justify-between items-center mb-xs">
-                                            <div className="flex items-center gap-sm">
-                                                {getRoleIcon(device.network_role)}
-                                                <span className="font-semibold text-small">{device.inventory_number}</span>
+                    <div className="card p-0 overflow-hidden">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th style={{ width: '80px' }}>ID</th>
+                                    <th>Bezeichnung</th>
+                                    <th>Subnetz</th>
+                                    <th>Beschreibung</th>
+                                    <th className="text-center">Geräte</th>
+                                    <th className="text-right">Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {vlans.map(vlan => (
+                                    <tr key={vlan.id}>
+                                        <td className="font-bold"><code>{vlan.vlan_id}</code></td>
+                                        <td>
+                                            <div className="font-semibold text-primary">{vlan.name}</div>
+                                        </td>
+                                        <td>
+                                            {vlan.subnet ? (
+                                                <code className="text-xs">{vlan.subnet}</code>
+                                            ) : (
+                                                <span className="text-muted italic text-xs">Nicht definiert</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <div className="text-small text-muted truncate" style={{ maxWidth: '300px' }} title={vlan.description}>
+                                                {vlan.description || '-'}
                                             </div>
-                                            <div className="font-mono text-xs">{device.ip_address}</div>
-                                        </div>
-                                        <div className="flex justify-between items-end">
-                                            <span className="text-xs text-muted">{device.location}</span>
-                                            <button className="btn btn-ghost btn-xs" onClick={() => openAssignModal(device)}><FiEdit2 /></button>
-                                        </div>
-                                    </div>
+                                        </td>
+                                        <td className="text-center">
+                                            <span className="badge badge-outline">
+                                                {devices.filter(d => d.network_vlan_id === vlan.id).length}
+                                            </span>
+                                        </td>
+                                        <td className="text-right">
+                                            <div className="flex justify-end gap-xs">
+                                                {hasAdminPermission() && (
+                                                    <>
+                                                        <button className="btn btn-ghost btn-icon btn-sm" title="Bearbeiten" onClick={() => openVlanModal(vlan)}>
+                                                            <FiEdit2 />
+                                                        </button>
+                                                        <button className="btn btn-ghost btn-icon btn-sm text-danger" title="Löschen" onClick={() => handleDeleteVlan(vlan)}>
+                                                            <FiTrash2 />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
                                 ))}
-                                {devices.filter(d => d.vlan_id === vlan.vlan_id).length === 0 && (
-                                    <p className="text-center py-md text-muted text-small italic">Keine Geräte</p>
+                                {vlans.length === 0 && (
+                                    <tr>
+                                        <td colSpan="6" className="text-center py-xl text-muted">
+                                            <FiAlertCircle size={32} className="mb-sm" style={{ margin: '0 auto' }} />
+                                            <div>Noch keine VLAN-Definitionen vorhanden.</div>
+                                        </td>
+                                    </tr>
                                 )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                            </tbody>
+                        </table>
+                    </div>
+                </>
             )}
 
-            {/* VLAN Modal */}
+            {/* Modal Components (Shared by both tabs) */}
             <Modal
                 isOpen={showVlanModal}
                 onClose={() => setShowVlanModal(false)}
-                title={editingVlan ? 'VLAN bearbeiten' : 'Neues VLAN erstellen'}
+                title={editingVlan ? 'VLAN-Definition bearbeiten' : 'Neue VLAN-Definition'}
                 footer={
                     <>
                         <button className="btn btn-secondary" onClick={() => setShowVlanModal(false)}>Abbrechen</button>
@@ -396,6 +423,7 @@ function Network() {
                             <input
                                 type="text" className="form-input" required
                                 value={vlanForm.name} onChange={e => setVlanForm({ ...vlanForm, name: e.target.value })}
+                                placeholder="z.B. Management, VoIP, Lehrer"
                             />
                         </div>
                     </div>
@@ -407,7 +435,7 @@ function Network() {
                         />
                     </div>
                     <div className="form-group">
-                        <label className="form-label">Beschreibung</label>
+                        <label className="form-label">Zusatzinformationen / Beschreibung</label>
                         <textarea
                             className="form-textarea" rows="3"
                             value={vlanForm.description} onChange={e => setVlanForm({ ...vlanForm, description: e.target.value })}
@@ -416,30 +444,29 @@ function Network() {
                 </form>
             </Modal>
 
-            {/* Assignment Modal */}
             <Modal
                 isOpen={showAssignModal}
                 onClose={() => setShowAssignModal(false)}
-                title={`Netzwerk: ${assigningDevice?.inventory_number}`}
+                title={`Netzwerk-Konfiguration: ${assigningDevice?.inventory_number}`}
                 footer={
                     <>
                         <button className="btn btn-secondary" onClick={() => setShowAssignModal(false)}>Abbrechen</button>
-                        <button className="btn btn-primary" onClick={handleAssignSubmit}>Speichern</button>
+                        <button className="btn btn-primary" onClick={handleAssignSubmit}>Zuweisung speichern</button>
                     </>
                 }
             >
                 <form onSubmit={handleAssignSubmit}>
                     <div className="grid grid-2 gap-md">
                         <div className="form-group">
-                            <label className="form-label">VLAN</label>
+                            <label className="form-label">Zugeordnetes VLAN</label>
                             <select
                                 className="form-select"
                                 value={assignForm.network_vlan_id}
                                 onChange={e => setAssignForm({ ...assignForm, network_vlan_id: e.target.value })}
                             >
-                                <option value="">Kein VLAN</option>
+                                <option value="">Kein VLAN (Nicht zugewiesen)</option>
                                 {vlans.map(v => (
-                                    <option key={v.id} value={v.id}>{v.vlan_id} - {v.name}</option>
+                                    <option key={v.id} value={v.id}>ID {v.vlan_id} - {v.name}</option>
                                 ))}
                             </select>
                         </div>
@@ -447,15 +474,15 @@ function Network() {
                             <label className="form-label">Netzwerkrolle</label>
                             <select
                                 className="form-select"
-                                value={assignForm.network_role}
+                                value={assignForm.network_role || 'Client'}
                                 onChange={e => setAssignForm({ ...assignForm, network_role: e.target.value })}
                             >
-                                <option value="Client">Client</option>
+                                <option value="Client">Client / Workstation</option>
                                 <option value="Server">Server</option>
                                 <option value="Printer">Drucker</option>
                                 <option value="AP">Access Point</option>
                                 <option value="Switch">Switch</option>
-                                <option value="Router">Router</option>
+                                <option value="Router">Router / Gateway</option>
                                 <option value="Sonstiges">Sonstiges</option>
                             </select>
                         </div>
@@ -465,16 +492,16 @@ function Network() {
                         <div className="form-group">
                             <div className="flex justify-between items-center mb-xs">
                                 <label className="form-label" style={{ margin: 0 }}>IP-Adresse</label>
-                                <label className="flex items-center gap-xs text-xs">
+                                <label className="flex items-center gap-xs text-xs cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={assignForm.dhcp_enabled}
                                         onChange={e => setAssignForm({ ...assignForm, dhcp_enabled: e.target.checked })}
-                                    /> DHCP
+                                    /> DHCP verwenden
                                 </label>
                             </div>
                             <input
-                                type="text" className="form-input font-mono" placeholder="192.168.1.10"
+                                type="text" className="form-input font-mono" placeholder="z.B. 192.168.1.10"
                                 disabled={assignForm.dhcp_enabled}
                                 value={assignForm.ip_address} onChange={e => setAssignForm({ ...assignForm, ip_address: e.target.value })}
                             />
@@ -488,18 +515,22 @@ function Network() {
                         </div>
                     </div>
 
+                    <div className="section-divider mt-md mb-md border-top pt-md">
+                        <span className="text-xs font-semibold text-muted uppercase">Hardware-Anschluss</span>
+                    </div>
+
                     <div className="grid grid-2 gap-md">
                         <div className="form-group">
-                            <label className="form-label">Switch-Name</label>
+                            <label className="form-label">Switch-Name / Bezeichnung</label>
                             <input
                                 type="text" className="form-input" placeholder="SW-B-204-01"
                                 value={assignForm.switch_name} onChange={e => setAssignForm({ ...assignForm, switch_name: e.target.value })}
                             />
                         </div>
                         <div className="form-group">
-                            <label className="form-label">Port</label>
+                            <label className="form-label">Port-Nummer</label>
                             <input
-                                type="text" className="form-input" placeholder="Gi1/0/24"
+                                type="text" className="form-input" placeholder="z.B. Gi1/0/24"
                                 value={assignForm.port_number} onChange={e => setAssignForm({ ...assignForm, port_number: e.target.value })}
                             />
                         </div>

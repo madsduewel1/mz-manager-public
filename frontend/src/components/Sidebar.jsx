@@ -16,7 +16,6 @@ const DEFAULT_MENU_ORDER = [
     'containers',
     'lendings',
     'error-reports',
-    'network',
     'admin'
 ];
 
@@ -35,13 +34,49 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
     const location = useLocation();
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+    const { settings } = useSettings();
+    const { org_name: orgName, logo_path: logoPath } = settings;
+
     const [menuOrder, setMenuOrder] = useState(() => {
         const saved = localStorage.getItem('sidebar_order');
         return saved ? JSON.parse(saved) : DEFAULT_MENU_ORDER;
     });
     const [draggedItem, setDraggedItem] = useState(null);
-    const { settings } = useSettings();
-    const { org_name: orgName, logo_path: logoPath } = settings;
+    useEffect(() => {
+        setMenuOrder(prevOrder => {
+            // 1. Remove anything that has a moduleKey (is an additional module)
+            let newOrder = prevOrder.filter(id => !MENU_ITEMS_DATA[id]?.moduleKey);
+
+            // 2. Ensure all core items (no moduleKey) from DEFAULT_MENU_ORDER are present
+            DEFAULT_MENU_ORDER.forEach(id => {
+                if (!newOrder.includes(id) && MENU_ITEMS_DATA[id] && !MENU_ITEMS_DATA[id].moduleKey) {
+                    // Find correct insertion point: after the item that precedes it in DEFAULT_MENU_ORDER
+                    const defIndex = DEFAULT_MENU_ORDER.indexOf(id);
+                    if (defIndex === 0) {
+                        newOrder.unshift(id);
+                    } else {
+                        const prevId = DEFAULT_MENU_ORDER[defIndex - 1];
+                        const prevIndexInNew = newOrder.indexOf(prevId);
+                        if (prevIndexInNew !== -1) {
+                            newOrder.splice(prevIndexInNew + 1, 0, id);
+                        } else {
+                            newOrder.push(id);
+                        }
+                    }
+                }
+            });
+
+            // 3. Clean up any invalid IDs
+            newOrder = newOrder.filter(id => MENU_ITEMS_DATA[id]);
+
+            // Save if changed
+            if (JSON.stringify(newOrder) !== JSON.stringify(prevOrder)) {
+                localStorage.setItem('sidebar_order', JSON.stringify(newOrder));
+                return newOrder;
+            }
+            return prevOrder;
+        });
+    }, [settings]);
 
     // Update local state when localStorage changes or on mount
     useEffect(() => {
@@ -97,9 +132,13 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
     }, []);
 
     const handleDragStart = (e, id) => {
+        // Prevent dragging for additional modules
+        if (MENU_ITEMS_DATA[id]?.moduleKey) {
+            e.preventDefault();
+            return;
+        }
         setDraggedItem(id);
         e.dataTransfer.effectAllowed = 'move';
-        // Transparent image to hide default ghost if needed, or just standard
     };
 
     const handleDragOver = (e, index) => {
@@ -120,7 +159,7 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
         localStorage.setItem('sidebar_order', JSON.stringify(menuOrder));
     };
 
-    const renderMenuItem = (id, index) => {
+    const renderMenuItem = (id, index, skipModuleCheck = false) => {
         const item = MENU_ITEMS_DATA[id];
         if (!item) return null;
 
@@ -129,15 +168,15 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
         if (item.permission && !hasPermission(item.permission)) return null;
         if (id !== 'dashboard' && !hasAnyPermissions()) return null;
 
-        // Check if module is enabled
-        if (item.moduleKey && settings[item.moduleKey] !== 'true') return null;
+        // Check if module is enabled (unless we are in the modules section)
+        if (!skipModuleCheck && item.moduleKey && settings[item.moduleKey] !== 'true') return null;
 
         const Icon = item.icon;
         const active = isActive(item.path);
         return (
             <div
                 key={id}
-                draggable
+                draggable={!item.moduleKey}
                 onDragStart={(e) => handleDragStart(e, id)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDragEnd={handleDragEnd}
@@ -260,6 +299,20 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
                     </div>
 
                     {menuOrder.map((id, index) => renderMenuItem(id, index))}
+
+                    {/* Additional Modules Section */}
+                    {Object.keys(MENU_ITEMS_DATA).some(id => MENU_ITEMS_DATA[id].moduleKey && settings[MENU_ITEMS_DATA[id].moduleKey] === 'true') && (
+                        <>
+                            <div style={{ ...styles.sectionHeader, marginTop: '20px' }}>
+                                <span>Zusätzliche Module</span>
+                                <FiGrid size={14} style={{ opacity: 0.5 }} />
+                            </div>
+                            {Object.keys(MENU_ITEMS_DATA)
+                                .filter(id => MENU_ITEMS_DATA[id].moduleKey && settings[MENU_ITEMS_DATA[id].moduleKey] === 'true')
+                                .map((id, index) => renderMenuItem(id, index, true))
+                            }
+                        </>
+                    )}
                 </nav>
             </aside>
         </>
