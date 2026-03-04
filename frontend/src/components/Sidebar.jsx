@@ -4,7 +4,7 @@ import {
     FiHome, FiMonitor, FiBox, FiRepeat, FiAlertCircle,
     FiLogOut, FiSettings, FiUser, FiMoon, FiSun, FiChevronDown,
     FiSearch, FiEdit3, FiMenu, FiUsers, FiShield, FiLock,
-    FiCpu, FiMapPin, FiList, FiGrid
+    FiCpu, FiMapPin, FiList, FiGrid, FiGlobe
 } from 'react-icons/fi';
 import { getUser, logout, hasRole, hasPermission, hasAdminPermission, hasAnyPermissions } from '../utils/auth';
 import { authAPI } from '../services/api';
@@ -25,7 +25,7 @@ const MENU_ITEMS_DATA = {
     'containers': { path: '/containers', label: 'Container', icon: FiBox, color: '#f97316' },
     'lendings': { path: '/lendings', label: 'Ausleihen', icon: FiRepeat, color: '#8b5cf6' },
     'error-reports': { path: '/error-reports', label: 'Fehlermeldungen', icon: FiAlertCircle, color: '#ef4444', permission: 'errors.manage' },
-    'network': { path: '/network', label: 'Netzwerk', icon: FiRepeat, color: '#10b981', permission: 'network.view', moduleKey: 'module_network_enabled' },
+    'network': { path: '/network', label: 'Netzwerk', icon: FiGlobe, color: '#10b981', permission: 'network.view', moduleKey: 'module_network_enabled' },
     'admin': { path: '/admin', label: 'Verwaltung', icon: FiSettings, color: '#6b7280', adminOnly: true }
 };
 
