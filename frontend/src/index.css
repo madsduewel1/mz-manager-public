@@ -1625,13 +1625,12 @@ a:hover {
     padding: var(--space-md);
   }
 
-  /* Touch optimizations */
-  .btn,
+  /* Touch optimizations - only form inputs get min-height, not buttons */
   .form-input,
   .form-select,
   .form-textarea {
-    min-height: 48px;
-    /* Better for thumbs */
+    min-height: 44px;
+    /* touch-friendly but not oversized */
     font-size: 16px;
     /* Stop iOS zoom */
   }
