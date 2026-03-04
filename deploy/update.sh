@@ -77,6 +77,26 @@ require('dotenv').config({ path: '../backend/.env' });
     } else {
       console.log('  ✅ Netzwerk-Modul Tabellen bereits vorhanden');
     }
+
+    console.log('  - Prüfe Zubehör-Modul Tabellen...');
+    const [accTables] = await pool.query('SHOW TABLES LIKE \"accessories\"');
+    if (accTables.length === 0) {
+      const fs = require('fs');
+      const path = require('path');
+      const migrationPath = path.join(__dirname, 'database', 'migration_accessories_module.sql');
+      if (fs.existsSync(migrationPath)) {
+        const sql = fs.readFileSync(migrationPath, 'utf8');
+        const queries = sql.split(';').filter(q => q.trim() !== '');
+        for (let q of queries) {
+          await pool.query(q);
+        }
+        console.log('  ✅ Zubehör-Modul Migration erfolgreich ausgeführt');
+      } else {
+        console.log('  ⚠️ migration_accessories_module.sql nicht gefunden, springe weiter...');
+      }
+    } else {
+      console.log('  ✅ Zubehör-Modul Tabellen bereits vorhanden');
+    }
   } catch (e) {
     console.error('  ❌ Migration fehlgeschlagen:', e.message);
     process.exit(1);
