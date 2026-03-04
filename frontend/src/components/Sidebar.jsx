@@ -280,16 +280,6 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
                     )}
                 </div>
 
-                {/* Search / Filter */}
-                <div style={styles.searchContainer}>
-                    <div style={styles.searchWrapper}>
-                        <input
-                            type="text"
-                            placeholder="Module filtern..."
-                            style={styles.searchInput}
-                        />
-                    </div>
-                </div>
 
                 {/* Navigation */}
                 <nav style={styles.nav}>
@@ -406,23 +396,6 @@ const styles = {
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         color: 'var(--sidebar-text)'
-    },
-    searchContainer: {
-        padding: '0 15px',
-        marginBottom: '20px'
-    },
-    searchWrapper: {
-        position: 'relative'
-    },
-    searchInput: {
-        width: '100%',
-        padding: '8px 12px',
-        background: 'var(--sidebar-hover)',
-        border: '1px solid var(--sidebar-border)',
-        borderRadius: 'var(--radius-md)',
-        color: 'var(--sidebar-text)',
-        fontSize: '14px',
-        outline: 'none'
     },
     nav: {
         flex: 1,
