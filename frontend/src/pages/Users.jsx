@@ -107,16 +107,16 @@ function Users() {
                         <tbody>
                             {users.map((user) => (
                                 <tr key={user.id}>
-                                    <td><strong>{user.username}</strong></td>
-                                    <td>{user.email}</td>
-                                    <td>{user.first_name} {user.last_name}</td>
-                                    <td>
+                                    <td data-label="Benutzername"><strong>{user.username}</strong></td>
+                                    <td data-label="E-Mail">{user.email}</td>
+                                    <td data-label="Name">{user.first_name} {user.last_name}</td>
+                                    <td data-label="Rolle">
                                         {user.roles && user.roles.map((r, idx) => (
                                             <span key={idx} className="badge badge-info mr-xs">{r}</span>
                                         ))}
                                         {(!user.roles && user.role) && <span className="badge badge-info">{user.role}</span>}
                                     </td>
-                                    <td className="text-small text-muted">
+                                    <td data-label="Erstellt" className="text-small text-muted">
                                         {user.created_at ? new Date(user.created_at).toLocaleDateString('de-DE') : '-'}
                                     </td>
                                 </tr>

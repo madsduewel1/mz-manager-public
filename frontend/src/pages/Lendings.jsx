@@ -211,7 +211,7 @@ function Lendings() {
                             <tbody>
                                 {activeLendings.map(lending => (
                                     <tr key={lending.id}>
-                                        <td>
+                                        <td data-label="Was wird geliehen?">
                                             <div style={{ fontWeight: 600 }}>
                                                 {lending.asset_inventory || lending.container_name}
                                             </div>
@@ -219,21 +219,21 @@ function Lendings() {
                                                 {lending.asset_type || 'Container'}
                                             </div>
                                         </td>
-                                        <td>
+                                        <td data-label="Entleiher">
                                             <div>{lending.borrower_name}</div>
                                             <div className="text-small text-muted">{lending.borrower_type}</div>
                                         </td>
-                                        <td>
+                                        <td data-label="Zeitraum">
                                             <div className="text-small">
                                                 {new Date(lending.start_date).toLocaleDateString('de-DE')} - {new Date(lending.planned_end_date).toLocaleDateString('de-DE')}
                                             </div>
                                         </td>
-                                        <td>
+                                        <td data-label="Status">
                                             <span className={`badge ${lending.days_remaining < 0 ? 'badge-danger' : (lending.days_remaining <= 1 ? 'badge-warning' : 'badge-success')}`}>
                                                 {lending.days_remaining < 0 ? 'Überfällig' : (lending.days_remaining === 0 ? 'Heute fällig' : `Noch ${lending.days_remaining} Tage`)}
                                             </span>
                                         </td>
-                                        <td style={{ textAlign: 'right' }}>
+                                        <td data-label="Aktionen" style={{ textAlign: 'right' }}>
                                             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                                 <button onClick={() => handleReturn(lending.id)} className="btn btn-sm btn-success" title="Als zurückgegeben markieren">
                                                     <FiCheckCircle />
@@ -272,12 +272,12 @@ function Lendings() {
                             <tbody>
                                 {returnedLendings.map(lending => (
                                     <tr key={lending.id}>
-                                        <td>{lending.asset_inventory || lending.container_name}</td>
-                                        <td>{lending.borrower_name}</td>
-                                        <td className="text-small">
+                                        <td data-label="Was">{lending.asset_inventory || lending.container_name}</td>
+                                        <td data-label="Entleiher">{lending.borrower_name}</td>
+                                        <td data-label="Zeitraum" className="text-small">
                                             {new Date(lending.start_date).toLocaleDateString('de-DE')} - {new Date(lending.planned_end_date).toLocaleDateString('de-DE')}
                                         </td>
-                                        <td className="text-small">
+                                        <td data-label="Zurückgegeben am" className="text-small">
                                             {lending.actual_end_date ? new Date(lending.actual_end_date).toLocaleDateString('de-DE') : '-'}
                                         </td>
                                     </tr>

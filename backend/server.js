@@ -26,6 +26,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// IFrame & Security Headers
+app.use((req, res, next) => {
+    // Portale wie Univention benötigen Einbettung
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *;");
+    res.setHeader('X-Frame-Options', 'ALLOWALL'); // Veraltet, aber manche Browser nutzen es noch
+    next();
+});
+
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

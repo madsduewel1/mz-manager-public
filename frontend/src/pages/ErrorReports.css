@@ -1,7 +1,5 @@
 .error-reports-page {
-    padding: var(--space-lg);
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
     animation: fadeIn 0.4s ease-out;
 }
 
@@ -677,5 +675,120 @@
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
+    }
+}
+
+/* Mobile Responsiveness for Error Reports */
+@media (max-width: 900px) {
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-group {
+        flex-wrap: wrap;
+    }
+
+    .filter-group select {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    .list-header {
+        display: none;
+    }
+
+    .report-row {
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            "id status"
+            "asset asset"
+            "reporter assignee";
+        gap: var(--space-sm);
+        padding: var(--space-lg);
+    }
+
+    .col-id {
+        grid-area: id;
+    }
+
+    .col-status {
+        grid-area: status;
+        justify-self: end;
+    }
+
+    .col-priority {
+        display: none;
+    }
+
+    /* Dot inside status badge or just hide */
+    .col-asset {
+        grid-area: asset;
+        padding: var(--space-xs) 0;
+    }
+
+    .col-reporter {
+        grid-area: reporter;
+    }
+
+    .col-assignee {
+        grid-area: assignee;
+        justify-self: end;
+    }
+
+    .ticket-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow-y: visible;
+    }
+
+    .ticket-main {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+        max-height: 50vh;
+    }
+
+    .ticket-sidebar {
+        height: auto;
+        overflow-y: visible;
+    }
+
+    .ticket-meta-bar {
+        flex-wrap: wrap;
+        gap: var(--space-lg);
+    }
+
+    .header-title-area h2 {
+        font-size: var(--font-size-lg);
+    }
+
+    .ticket-detail {
+        width: 100%;
+        height: 100%;
+        max-width: none !important;
+        border-radius: 0 !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .error-reports-page {
+        padding: var(--space-md);
+    }
+
+    .page-header {
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .header-actions {
+        width: 100%;
+    }
+
+    .header-actions button {
+        width: 100%;
+    }
+
+    .meta-item {
+        flex: 1 1 40%;
     }
 }

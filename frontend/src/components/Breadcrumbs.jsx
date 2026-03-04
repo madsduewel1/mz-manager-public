@@ -14,11 +14,13 @@ const Breadcrumbs = () => {
         'error-reports': 'Fehlermeldungen',
         'admin': 'Verwaltung',
         'users': 'Benutzer',
-        'roles': 'Rellen',
+        'roles': 'Rollen',
+        'permissions': 'Rechte',
         'rooms': 'Räume',
         'models': 'Gerätemodelle',
         'qr-codes': 'QR-Codes',
-        'logs': 'System-Logs'
+        'logs': 'System-Logs',
+        'settings': 'Einstellungen'
     };
 
     if (pathnames.length === 0) return null;

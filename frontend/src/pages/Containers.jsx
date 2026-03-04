@@ -207,15 +207,15 @@ function Containers() {
                         <tbody>
                             {filteredContainers.map((container) => (
                                 <tr key={container.id}>
-                                    <td>
+                                    <td data-label="Name">
                                         <Link to={`/containers/${container.id}`} style={{ fontWeight: 600 }}>
                                             {container.name}
                                         </Link>
                                     </td>
-                                    <td>
+                                    <td data-label="Typ">
                                         <span className="badge badge-info">{container.type}</span>
                                     </td>
-                                    <td>
+                                    <td data-label="Standort">
                                         {container.parent_name ? (
                                             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>Raum</span>
@@ -225,10 +225,10 @@ function Containers() {
                                             container.location || <span className="text-muted">Nicht zugewiesen</span>
                                         )}
                                     </td>
-                                    <td>
+                                    <td data-label="Geräte">
                                         <span className="badge badge-secondary">{container.asset_count || 0}</span>
                                     </td>
-                                    <td style={{ textAlign: 'right' }}>
+                                    <td data-label="Aktionen" style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                             <Link
                                                 to={`/containers/${container.id}`}

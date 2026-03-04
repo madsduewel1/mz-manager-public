@@ -287,32 +287,25 @@ function Assets() {
                         <tbody>
                             {filteredAssets.map((asset) => (
                                 <tr key={asset.id}>
-                                    <td>
+                                    <td data-label="Inventarnummer">
                                         <Link to={`/assets/${asset.id}`} style={{ fontWeight: 600 }}>
                                             {asset.inventory_number}
                                         </Link>
                                     </td>
-                                    <td>
+                                    <td data-label="Typ">
                                         <span className="badge badge-info">{asset.type}</span>
                                     </td>
-                                    <td>
+                                    <td data-label="Modell / Hersteller">
                                         <div className="text-small">
                                             {asset.model || 'N/A'}<br />
-                                            <span className="text-muted">{asset.manufacturer}</span>
+                                            <span className="text-muted">{asset.manufacturer || ''}</span>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-label="Status">
                                         <StatusBadge status={asset.status} />
                                     </td>
-                                    <td>
-                                        {asset.container_name ? (
-                                            <span className="flex items-center gap-xs">
-                                                <FiPackage size={14} className="text-muted" />
-                                                {asset.container_name}
-                                            </span>
-                                        ) : (
-                                            <span className="text-muted">Kein Standort</span>
-                                        )}
+                                    <td data-label="Standort">
+                                        {asset.container_name || <span className="text-muted">Nicht zugewiesen</span>}
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -358,7 +351,7 @@ function Assets() {
                 footer={
                     <>
                         <button onClick={() => setShowModal(false)} className="btn btn-secondary">Abbrechen</button>
-                        <button onClick={handleSubmit} className="btn btn-primary">Speichern</button>
+                        <button onClick={handleSubmit} className="btn btn-primary">{editingAsset ? 'Speichern' : 'Erstellen'}</button>
                     </>
                 }
             >

@@ -153,8 +153,10 @@ function App() {
                                                     </button>
                                                 </header>
 
+                                                {/* Global Breadcrumbs – außerhalb von .page */}
+                                                <Breadcrumbs />
+
                                                 <div className="page">
-                                                    <Breadcrumbs />
                                                     <Routes>
                                                         <Route path="/" element={<Dashboard />} />
                                                         <Route path="/dashboard" element={<Dashboard />} />
@@ -165,6 +167,14 @@ function App() {
                                                         <Route path="/lendings" element={<Lendings />} />
                                                         <Route path="/error-reports" element={<ErrorReports />} />
                                                         <Route path="/admin" element={<Admin />} />
+                                                        <Route path="/admin/users" element={<Admin defaultTab="users" />} />
+                                                        <Route path="/admin/roles" element={<Admin defaultTab="roles" />} />
+                                                        <Route path="/admin/permissions" element={<Admin defaultTab="permissions" />} />
+                                                        <Route path="/admin/models" element={<Admin defaultTab="models" />} />
+                                                        <Route path="/admin/rooms" element={<Admin defaultTab="rooms" />} />
+                                                        <Route path="/admin/qr-codes" element={<Admin defaultTab="qr-codes" />} />
+                                                        <Route path="/admin/logs" element={<Admin defaultTab="logs" />} />
+                                                        <Route path="/admin/settings" element={<Admin defaultTab="settings" />} />
                                                         <Route path="*" element={<Navigate to="/dashboard" replace />} />
                                                     </Routes>
                                                 </div>

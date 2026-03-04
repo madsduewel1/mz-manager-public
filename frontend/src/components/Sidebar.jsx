@@ -3,7 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import {
     FiHome, FiMonitor, FiBox, FiRepeat, FiAlertCircle,
     FiLogOut, FiSettings, FiUser, FiMoon, FiSun, FiChevronDown,
-    FiSearch, FiEdit3, FiMenu
+    FiSearch, FiEdit3, FiMenu, FiUsers, FiShield, FiLock,
+    FiCpu, FiMapPin, FiList, FiGrid
 } from 'react-icons/fi';
 import { getUser, logout, hasRole, hasPermission, hasAdminPermission, hasAnyPermissions } from '../utils/auth';
 import { authAPI } from '../services/api';
@@ -47,7 +48,8 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
     }, []);
 
     const isActive = (path) => {
-        return location.pathname === path || location.pathname.startsWith(path + '/');
+        if (path === '/admin') return location.pathname === '/admin';
+        return location.pathname === path || (path !== '/' && location.pathname.startsWith(path + '/'));
     };
 
     const handleLinkClick = () => {
@@ -127,7 +129,6 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
 
         const Icon = item.icon;
         const active = isActive(item.path);
-
         return (
             <div
                 key={id}
@@ -158,10 +159,7 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
             {/* Mobile Backdrop */}
             {isOpen && <div style={styles.backdrop} onClick={onClose} />}
 
-            <aside style={{
-                ...styles.sidebar,
-                transform: isOpen || window.innerWidth > 1024 ? 'translateX(0)' : 'translateX(-100%)',
-            }}>
+            <aside className={`main-sidebar${isOpen ? ' is-open' : ''}`} style={styles.sidebar}>
                 {/* Brand */}
                 <div style={styles.brand}>
                     {logoPath ? (
@@ -266,15 +264,12 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
 const styles = {
     sidebar: {
         width: 'var(--sidebar-width)',
-        height: '100vh',
+        minHeight: '100vh',
         background: 'var(--sidebar-bg)',
         borderRight: '1px solid var(--sidebar-border)',
         display: 'flex',
         flexDirection: 'column',
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        zIndex: 1000,
+        flexShrink: 0,
         transition: 'transform var(--transition-base)'
     },
     backdrop: {
@@ -411,6 +406,30 @@ const styles = {
         background: 'var(--sidebar-active)',
         color: 'var(--sidebar-text)',
         fontWeight: 600
+    },
+    activeSubLink: {
+        background: 'rgba(255, 255, 255, 0.05)',
+        color: 'var(--color-primary)',
+        fontWeight: 600
+    },
+    subItemsContainer: {
+        paddingLeft: '15px',
+        marginTop: '2px',
+        marginBottom: '5px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px'
+    },
+    subLink: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '8px 15px',
+        color: 'var(--sidebar-text-muted)',
+        textDecoration: 'none',
+        borderRadius: 'var(--radius-sm)',
+        fontSize: '13px',
+        transition: 'all var(--transition-fast)'
     },
     dropdownMenu: {
         position: 'absolute',
