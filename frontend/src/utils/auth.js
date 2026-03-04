@@ -80,7 +80,8 @@ export const hasPermission = (...perms) => {
 // Permissions that require Verwaltung access
 const ADMIN_PERMISSIONS = [
     'all', 'users.manage', 'roles.manage', 'models.manage',
-    'rooms.manage', 'qr.print', 'logs.view'
+    'rooms.manage', 'qr.print', 'logs.view',
+    'users.view', 'roles.view', 'models.view', 'rooms.view'
 ];
 
 // Check if user has any permission that grants Verwaltung access

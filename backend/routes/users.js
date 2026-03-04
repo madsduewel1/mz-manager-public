@@ -6,7 +6,7 @@ const { authMiddleware, requireRole, requirePermission } = require('../middlewar
 const { logActivity } = require('../utils/logger');
 
 // Get all users (Admin only)
-router.get('/', authMiddleware, requirePermission('users.manage'), async (req, res) => {
+router.get('/', authMiddleware, requirePermission('users.view'), async (req, res) => {
     try {
         const [users] = await pool.query(`
             SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.created_at,
@@ -35,7 +35,7 @@ router.get('/', authMiddleware, requirePermission('users.manage'), async (req, r
 });
 
 // Update user
-router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req, res) => {
+router.put('/:id', authMiddleware, requirePermission('users.edit'), async (req, res) => {
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
@@ -89,7 +89,7 @@ router.put('/:id', authMiddleware, requirePermission('users.manage'), async (req
 });
 
 // Reset password
-router.post('/:id/reset-password', authMiddleware, requirePermission('users.manage'), async (req, res) => {
+router.post('/:id/reset-password', authMiddleware, requirePermission('users.edit'), async (req, res) => {
     try {
         const { id } = req.params;
         const { new_password, password, requires_password_change } = req.body;
@@ -116,7 +116,7 @@ router.post('/:id/reset-password', authMiddleware, requirePermission('users.mana
 });
 
 // Delete user
-router.delete('/:id', authMiddleware, requirePermission('users.manage'), async (req, res) => {
+router.delete('/:id', authMiddleware, requirePermission('users.delete'), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -161,7 +161,7 @@ router.delete('/:id', authMiddleware, requirePermission('users.manage'), async (
 });
 
 // Toggle user active status (admin only)
-router.post('/:id/toggle-active', authMiddleware, requirePermission('users.manage'), async (req, res) => {
+router.post('/:id/toggle-active', authMiddleware, requirePermission('users.edit'), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -211,7 +211,7 @@ router.post('/:id/toggle-active', authMiddleware, requirePermission('users.manag
 });
 
 // Add permission to user
-router.post('/:id/permissions', authMiddleware, requirePermission('users.manage'), async (req, res) => {
+router.post('/:id/permissions', authMiddleware, requirePermission('users.edit'), async (req, res) => {
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
@@ -243,7 +243,7 @@ router.post('/:id/permissions', authMiddleware, requirePermission('users.manage'
 });
 
 // Remove permission from user
-router.delete('/:id/permissions/:permission', authMiddleware, requirePermission('users.manage'), async (req, res) => {
+router.delete('/:id/permissions/:permission', authMiddleware, requirePermission('users.edit'), async (req, res) => {
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();

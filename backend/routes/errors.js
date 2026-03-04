@@ -33,7 +33,7 @@ const upload = multer({
 });
 
 // Get all error reports (authenticated users only)
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, requirePermission('errors.view'), async (req, res) => {
     try {
         const { status, priority, assigned_to, search, archived } = req.query;
 
@@ -314,7 +314,7 @@ router.post('/public', upload.single('photo'), async (req, res) => {
 });
 
 // Update error report (Take/Transfer/Status/Priority/Archive)
-router.put('/:id', authMiddleware, requirePermission('errors.manage'), async (req, res) => {
+router.put('/:id', authMiddleware, requirePermission('errors.edit'), async (req, res) => {
     const connection = await pool.getConnection();
     try {
         const { id } = req.params;
@@ -413,7 +413,7 @@ router.put('/:id', authMiddleware, requirePermission('errors.manage'), async (re
 });
 
 // Delete error report
-router.delete('/:id', authMiddleware, requirePermission('errors.manage'), async (req, res) => {
+router.delete('/:id', authMiddleware, requirePermission('errors.delete'), async (req, res) => {
     try {
         const { id } = req.params;
         await pool.query('DELETE FROM error_reports WHERE id = ?', [id]);

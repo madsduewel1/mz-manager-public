@@ -5,7 +5,7 @@ const { authMiddleware, requireRole, requirePermission } = require('../middlewar
 const { logActivity } = require('../utils/logger');
 
 // Get all lendings
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, requirePermission('lendings.view'), async (req, res) => {
     try {
         const [lendings] = await pool.query(
             `SELECT l.*, 
@@ -29,7 +29,7 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Get active lendings
-router.get('/active', authMiddleware, async (req, res) => {
+router.get('/active', authMiddleware, requirePermission('lendings.view'), async (req, res) => {
     try {
         const [lendings] = await pool.query(
             `SELECT l.*, 
@@ -143,7 +143,7 @@ router.post('/', authMiddleware, requirePermission('lendings.create'), async (re
 });
 
 // Return lending
-router.put('/:id/return', authMiddleware, async (req, res) => {
+router.put('/:id/return', authMiddleware, requirePermission('lendings.return'), async (req, res) => {
     try {
         const { id } = req.params;
 

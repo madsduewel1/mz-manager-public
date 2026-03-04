@@ -8,7 +8,7 @@ const fs = require('fs');
 const { generateQRCodeBuffer } = require('../utils/qrcode');
 
 // --- Device Models ---
-router.get('/device-models', authMiddleware, async (req, res) => {
+router.get('/device-models', authMiddleware, requirePermission('models.view'), async (req, res) => {
     try {
         const [models] = await pool.query('SELECT * FROM device_models ORDER BY manufacturer, model_name');
         res.json(models);
@@ -20,7 +20,7 @@ router.get('/device-models', authMiddleware, async (req, res) => {
     }
 });
 
-router.post('/device-models', authMiddleware, requirePermission('models.manage'), async (req, res) => {
+router.post('/device-models', authMiddleware, requirePermission('models.create'), async (req, res) => {
     try {
         const { type, manufacturer, model_name, description } = req.body;
         await pool.query(
@@ -34,7 +34,7 @@ router.post('/device-models', authMiddleware, requirePermission('models.manage')
     }
 });
 
-router.delete('/device-models/:id', authMiddleware, requirePermission('models.manage'), async (req, res) => {
+router.delete('/device-models/:id', authMiddleware, requirePermission('models.delete'), async (req, res) => {
     try {
         await pool.query('DELETE FROM device_models WHERE id = ?', [req.params.id]);
         res.json({ message: 'Modell gelöscht' });
@@ -45,7 +45,7 @@ router.delete('/device-models/:id', authMiddleware, requirePermission('models.ma
 });
 
 // --- Rooms (Refactored to use containers table) ---
-router.get('/rooms', authMiddleware, async (req, res) => {
+router.get('/rooms', authMiddleware, requirePermission('rooms.view'), async (req, res) => {
     try {
         const [rooms] = await pool.query("SELECT * FROM containers WHERE type = 'raum' ORDER BY name");
         res.json(rooms);
@@ -55,7 +55,7 @@ router.get('/rooms', authMiddleware, async (req, res) => {
     }
 });
 
-router.post('/rooms', authMiddleware, requirePermission('rooms.manage'), async (req, res) => {
+router.post('/rooms', authMiddleware, requirePermission('rooms.create'), async (req, res) => {
     try {
         const { name, building, floor, capacity } = req.body;
 
@@ -74,7 +74,7 @@ router.post('/rooms', authMiddleware, requirePermission('rooms.manage'), async (
     }
 });
 
-router.delete('/rooms/:id', authMiddleware, requirePermission('rooms.manage'), async (req, res) => {
+router.delete('/rooms/:id', authMiddleware, requirePermission('rooms.delete'), async (req, res) => {
     try {
         // Check if room has assets or sub-containers
         const [assets] = await pool.query('SELECT COUNT(*) as count FROM assets WHERE container_id = ?', [req.params.id]);
@@ -93,7 +93,7 @@ router.delete('/rooms/:id', authMiddleware, requirePermission('rooms.manage'), a
 });
 
 // --- Roles (DB-backed CRUD) ---
-router.get('/roles', authMiddleware, async (req, res) => {
+router.get('/roles', authMiddleware, requirePermission('roles.view'), async (req, res) => {
     try {
         const [roles] = await pool.query('SELECT * FROM roles ORDER BY is_system DESC, name');
         const [permissions] = await pool.query('SELECT * FROM role_permissions');

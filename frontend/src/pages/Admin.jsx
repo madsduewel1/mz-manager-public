@@ -55,20 +55,6 @@ const Admin = ({ defaultTab }) => {
     const { confirm } = useConfirmation();
     const user = getUser();
 
-    const getAvailableTabs = () => {
-        const tabs = [];
-        tabs.push('overview');
-        if (hasPermission('users.manage', 'users.create')) tabs.push('users');
-        if (hasPermission('roles.manage')) tabs.push('roles');
-        if (hasRole('Administrator')) tabs.push('permissions');
-        if (hasPermission('models.manage')) tabs.push('models');
-        if (hasPermission('rooms.manage')) tabs.push('rooms');
-        if (hasPermission('qr.print')) tabs.push('qr-codes');
-        if (hasPermission('logs.view') || hasRole('Administrator')) tabs.push('logs');
-        return tabs;
-    };
-
-    const availableTabs = getAvailableTabs();
 
     useEffect(() => {
         const handleClickOutside = () => {
@@ -706,25 +692,87 @@ const Admin = ({ defaultTab }) => {
 
     // Available permissions for role creation and user assignment
     const availablePermissions = [
-        'assets.manage', 'containers.manage', 'errors.manage', 'errors.create',
-        'lendings.manage', 'lendings.create', 'users.manage', 'roles.manage',
-        'models.manage', 'rooms.manage', 'qr.print', 'logs.view'
+        'assets.view', 'assets.create', 'assets.edit', 'assets.delete', 'assets.history',
+        'containers.view', 'containers.create', 'containers.edit', 'containers.delete',
+        'errors.view', 'errors.manage', 'errors.create', 'errors.edit', 'errors.delete',
+        'lendings.view', 'lendings.create', 'lendings.return', 'lendings.delete',
+        'users.view', 'users.manage', 'users.create', 'users.edit', 'users.delete',
+        'roles.view', 'roles.manage', 'roles.create', 'roles.edit', 'roles.delete',
+        'models.view', 'models.manage', 'models.create', 'models.edit', 'models.delete',
+        'rooms.view', 'rooms.manage', 'rooms.create', 'rooms.edit', 'rooms.delete',
+        'qr.print', 'logs.view'
     ];
 
     const permissionLabels = {
-        'assets.manage': 'Geräte verwalten',
-        'containers.manage': 'Container verwalten',
-        'errors.manage': 'Fehler verwalten',
+        'assets.view': 'Geräte ansehen',
+        'assets.create': 'Geräte erstellen',
+        'assets.edit': 'Geräte bearbeiten',
+        'assets.delete': 'Geräte löschen',
+        'assets.history': 'Geräte-Historie einsehen',
+        'containers.view': 'Container ansehen',
+        'containers.create': 'Container erstellen',
+        'containers.edit': 'Container bearbeiten',
+        'containers.delete': 'Container löschen',
+        'errors.view': 'Fehlermeldungen ansehen',
+        'errors.manage': 'Fehler verwalten (Alles)',
         'errors.create': 'Fehler melden',
-        'lendings.manage': 'Ausleihen verwalten',
+        'errors.edit': 'Fehler bearbeiten',
+        'errors.delete': 'Fehlermeldungen löschen',
+        'lendings.view': 'Ausleihen ansehen',
         'lendings.create': 'Ausleihen erstellen',
-        'users.manage': 'Benutzer verwalten',
-        'roles.manage': 'Rollen verwalten',
-        'models.manage': 'Modelle verwalten',
-        'rooms.manage': 'Räume verwalten',
+        'lendings.return': 'Ausleihen zurücknehmen',
+        'lendings.delete': 'Ausleihen löschen',
+        'users.view': 'Benutzer ansehen',
+        'users.manage': 'Benutzer verwalten (Alles)',
+        'users.create': 'Benutzer erstellen',
+        'users.edit': 'Benutzer bearbeiten',
+        'users.delete': 'Benutzer löschen',
+        'roles.view': 'Rollen ansehen',
+        'roles.manage': 'Rollen verwalten (Alles)',
+        'roles.create': 'Rollen erstellen',
+        'roles.edit': 'Rollen bearbeiten',
+        'roles.delete': 'Rollen löschen',
+        'models.view': 'Modelle ansehen',
+        'models.manage': 'Modelle verwalten (Alles)',
+        'models.create': 'Modelle erstellen',
+        'models.edit': 'Modelle bearbeiten',
+        'models.delete': 'Modelle löschen',
+        'rooms.view': 'Räume ansehen',
+        'rooms.manage': 'Räume verwalten (Alles)',
+        'rooms.create': 'Räume erstellen',
+        'rooms.edit': 'Räume bearbeiten',
+        'rooms.delete': 'Räume löschen',
         'qr.print': 'QR-Codes drucken',
         'logs.view': 'Logs einsehen'
     };
+
+    const permissionGroups = [
+        {
+            name: 'Basis-Funktionen',
+            perms: ['logs.view', 'qr.print']
+        },
+        {
+            name: 'Geräte & Inventar',
+            perms: ['assets.view', 'assets.create', 'assets.edit', 'assets.delete', 'assets.history', 'models.view', 'models.create', 'models.delete', 'rooms.view', 'rooms.create', 'rooms.delete']
+        },
+        {
+            name: 'Container',
+            perms: ['containers.view', 'containers.create', 'containers.edit', 'containers.delete']
+        },
+        {
+            name: 'Ausleihe',
+            perms: ['lendings.view', 'lendings.create', 'lendings.return', 'lendings.delete']
+        },
+        {
+            name: 'Fehlermeldungen',
+            perms: ['errors.view', 'errors.create', 'errors.edit', 'errors.delete']
+        },
+        {
+            name: 'Benutzer & Rollen',
+            perms: ['users.view', 'users.create', 'users.edit', 'users.delete', 'roles.view', 'roles.create', 'roles.edit', 'roles.delete']
+        }
+    ];
+
 
     const getRoleBadgeClass = (roleName) => {
         const lower = (roleName || '').toLowerCase();
@@ -737,11 +785,11 @@ const Admin = ({ defaultTab }) => {
 
     const adminMenuItems = [
         { id: 'overview', label: 'Übersicht', icon: FiGrid },
-        { id: 'users', label: 'Benutzer', icon: FiUsers, permission: 'users.manage' },
-        { id: 'roles', label: 'Rollen', icon: FiShield, permission: 'roles.manage' },
+        { id: 'users', label: 'Benutzer', icon: FiUsers, permission: 'users.view' },
+        { id: 'roles', label: 'Rollen', icon: FiShield, permission: 'roles.view' },
         { id: 'permissions', label: 'Rechte', icon: FiLock, role: 'Administrator' },
-        { id: 'models', label: 'Gerätemodelle', icon: FiCpu, permission: 'models.manage' },
-        { id: 'rooms', label: 'Räume', icon: FiMapPin, permission: 'rooms.manage' },
+        { id: 'models', label: 'Gerätemodelle', icon: FiCpu, permission: 'models.view' },
+        { id: 'rooms', label: 'Räume', icon: FiMapPin, permission: 'rooms.view' },
         { id: 'qr-codes', label: 'QR-Codes', icon: FiBox, permission: 'qr.print' },
         { id: 'logs', label: 'System-Logs', icon: FiList, permission: 'logs.view' },
         { id: 'settings', label: 'Einstellungen', icon: FiSettings, role: 'Administrator' }
@@ -1696,20 +1744,68 @@ const Admin = ({ defaultTab }) => {
                             </div>
                             <div className="form-group">
                                 <label className="form-label">Berechtigungen</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                                    {availablePermissions.map(perm => (
-                                        <div key={perm} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <input
-                                                type="checkbox"
-                                                id={`perm-${perm}`}
-                                                checked={roleForm.permissions.includes(perm)}
-                                                onChange={() => togglePermission(perm)}
-                                            />
-                                            <label htmlFor={`perm-${perm}`} style={{ fontSize: '14px', cursor: 'pointer' }}>
-                                                {permissionLabels[perm] || perm}
-                                            </label>
+                                <div className="permissions-groups">
+                                    {permissionGroups.map(group => (
+                                        <div key={group.name} className="permission-group-section" style={{ marginBottom: '20px', padding: '15px', background: 'var(--color-bg-light)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                                <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--color-text-primary)', margin: 0 }}>{group.name}</h3>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-ghost btn-xs"
+                                                    onClick={() => {
+                                                        const allIncluded = group.perms.every(p => roleForm.permissions.includes(p));
+                                                        let newPerms = [...roleForm.permissions];
+                                                        if (allIncluded) {
+                                                            newPerms = newPerms.filter(p => !group.perms.includes(p));
+                                                        } else {
+                                                            group.perms.forEach(p => {
+                                                                if (!newPerms.includes(p)) newPerms.push(p);
+                                                            });
+                                                        }
+                                                        setRoleForm({ ...roleForm, permissions: newPerms });
+                                                    }}
+                                                >
+                                                    {group.perms.every(p => roleForm.permissions.includes(p)) ? 'Alle abwählen' : 'Alle wählen'}
+                                                </button>
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                {group.perms.map(perm => (
+                                                    <div key={perm} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            id={`perm-${perm}`}
+                                                            checked={roleForm.permissions.includes(perm)}
+                                                            onChange={() => togglePermission(perm)}
+                                                        />
+                                                        <label htmlFor={`perm-${perm}`} style={{ fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                            {permissionLabels[perm] || perm}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     ))}
+                                    {/* Handle permissions that might not be in any group */}
+                                    {availablePermissions.filter(p => !permissionGroups.some(g => g.perms.includes(p))).length > 0 && (
+                                        <div className="permission-group-section" style={{ marginBottom: '20px', padding: '15px', background: 'var(--color-bg-light)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                                            <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--color-text-primary)', marginBottom: '12px' }}>Sonstige</h3>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                {availablePermissions.filter(p => !permissionGroups.some(g => g.perms.includes(p))).map(perm => (
+                                                    <div key={perm} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            id={`perm-${perm}`}
+                                                            checked={roleForm.permissions.includes(perm)}
+                                                            onChange={() => togglePermission(perm)}
+                                                        />
+                                                        <label htmlFor={`perm-${perm}`} style={{ fontSize: '13px', cursor: 'pointer' }}>
+                                                            {permissionLabels[perm] || perm}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </form>

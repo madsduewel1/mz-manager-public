@@ -6,7 +6,7 @@ const { logActivity } = require('../utils/logger');
 const { generateQRId, generateQRCode } = require('../utils/qrcode');
 
 // Get all assets
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, requirePermission('assets.view'), async (req, res) => {
     try {
         const { status, type, container_id } = req.query;
 
@@ -103,7 +103,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 });
 
 // Create new asset
-router.post('/', authMiddleware, requirePermission('assets.manage'), async (req, res) => {
+router.post('/', authMiddleware, requirePermission('assets.create'), async (req, res) => {
     try {
         const {
             inventory_number,
@@ -167,7 +167,7 @@ router.post('/', authMiddleware, requirePermission('assets.manage'), async (req,
 });
 
 // Update asset
-router.put('/:id', authMiddleware, requirePermission('assets.manage'), async (req, res) => {
+router.put('/:id', authMiddleware, requirePermission('assets.edit'), async (req, res) => {
     try {
         const { id } = req.params;
         const {
@@ -218,7 +218,7 @@ router.put('/:id', authMiddleware, requirePermission('assets.manage'), async (re
 });
 
 // Delete asset
-router.delete('/:id', authMiddleware, requirePermission('assets.manage'), async (req, res) => {
+router.delete('/:id', authMiddleware, requirePermission('assets.delete'), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -236,7 +236,7 @@ router.delete('/:id', authMiddleware, requirePermission('assets.manage'), async 
 });
 
 // Get asset history
-router.get('/:id/history', authMiddleware, async (req, res) => {
+router.get('/:id/history', authMiddleware, requirePermission('assets.history'), async (req, res) => {
     try {
         const [history] = await pool.query(
             `SELECT h.*, u.username 

@@ -5,7 +5,7 @@ const { authMiddleware, requireRole, requirePermission } = require('../middlewar
 const { generateQRId, generateQRCode } = require('../utils/qrcode');
 
 // Get all containers
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, requirePermission('containers.view'), async (req, res) => {
     try {
         const [containers] = await pool.query(
             `SELECT c.*, 
@@ -24,7 +24,7 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Get single container with assets
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', authMiddleware, requirePermission('containers.view'), async (req, res) => {
     try {
         const [containers] = await pool.query(
             `SELECT c.*, pc.name as parent_name
@@ -62,7 +62,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 });
 
 // Create new container
-router.post('/', authMiddleware, requirePermission('containers.manage'), async (req, res) => {
+router.post('/', authMiddleware, requirePermission('containers.create'), async (req, res) => {
     try {
         const { name, type, description, location, parent_container_id, capacity, building, floor } = req.body;
 
@@ -95,7 +95,7 @@ router.post('/', authMiddleware, requirePermission('containers.manage'), async (
 });
 
 // Update container
-router.put('/:id', authMiddleware, requirePermission('containers.manage'), async (req, res) => {
+router.put('/:id', authMiddleware, requirePermission('containers.edit'), async (req, res) => {
     try {
         const { id } = req.params;
         const { name, type, description, location, parent_container_id, capacity, building, floor } = req.body;
@@ -115,7 +115,7 @@ router.put('/:id', authMiddleware, requirePermission('containers.manage'), async
 });
 
 // Delete container
-router.delete('/:id', authMiddleware, requirePermission('containers.manage'), async (req, res) => {
+router.delete('/:id', authMiddleware, requirePermission('containers.delete'), async (req, res) => {
     try {
         const { id } = req.params;
 
