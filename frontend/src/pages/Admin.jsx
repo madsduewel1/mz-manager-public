@@ -704,74 +704,87 @@ const Admin = ({ defaultTab }) => {
 
     // Available permissions for role creation and user assignment
     const availablePermissions = [
+        // Geräte
         'assets.view', 'assets.create', 'assets.edit', 'assets.delete', 'assets.history',
+        // Container
         'containers.view', 'containers.create', 'containers.edit', 'containers.delete',
-        'errors.view', 'errors.manage', 'errors.create', 'errors.edit', 'errors.delete',
+        // Fehlermeldungen
+        'errors.view', 'errors.create', 'errors.edit', 'errors.delete',
+        // Ausleihe
         'lendings.view', 'lendings.create', 'lendings.return', 'lendings.delete',
-        'users.view', 'users.manage', 'users.create', 'users.edit', 'users.delete',
-        'roles.view', 'roles.manage', 'roles.create', 'roles.edit', 'roles.delete',
-        'models.view', 'models.manage', 'models.create', 'models.edit', 'models.delete',
-        'rooms.view', 'rooms.manage', 'rooms.create', 'rooms.edit', 'rooms.delete',
+        // Benutzer
+        'users.view', 'users.create', 'users.edit', 'users.delete',
+        // Rollen
+        'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
+        // Gerätemodelle
+        'models.view', 'models.create', 'models.edit', 'models.delete',
+        // Räume
+        'rooms.view', 'rooms.create', 'rooms.edit', 'rooms.delete',
+        // Sonstiges
         'qr.print', 'logs.view',
-        'network.view', 'network.edit', 'network.assign_vlan', 'network.manage_ips', 'network.admin'
+        // Netzwerk
+        'network.view', 'network.edit', 'network.admin'
     ];
 
     const permissionLabels = {
+        // Geräte
         'assets.view': 'Geräte ansehen',
-        'assets.create': 'Geräte erstellen',
+        'assets.create': 'Geräte hinzufügen',
         'assets.edit': 'Geräte bearbeiten',
         'assets.delete': 'Geräte löschen',
-        'assets.history': 'Geräte-Historie einsehen',
+        'assets.history': 'Geräteverlauf einsehen',
+        // Container
         'containers.view': 'Container ansehen',
         'containers.create': 'Container erstellen',
         'containers.edit': 'Container bearbeiten',
         'containers.delete': 'Container löschen',
+        // Fehlermeldungen
         'errors.view': 'Fehlermeldungen ansehen',
-        'errors.manage': 'Fehler verwalten (Alles)',
-        'errors.create': 'Fehler melden',
-        'errors.edit': 'Fehler bearbeiten',
+        'errors.create': 'Fehlermeldungen melden',
+        'errors.edit': 'Fehlermeldungen bearbeiten',
         'errors.delete': 'Fehlermeldungen löschen',
+        // Ausleihe
         'lendings.view': 'Ausleihen ansehen',
         'lendings.create': 'Ausleihen erstellen',
         'lendings.return': 'Ausleihen zurücknehmen',
         'lendings.delete': 'Ausleihen löschen',
+        // Benutzer
         'users.view': 'Benutzer ansehen',
-        'users.manage': 'Benutzer verwalten (Alles)',
         'users.create': 'Benutzer erstellen',
         'users.edit': 'Benutzer bearbeiten',
         'users.delete': 'Benutzer löschen',
+        // Rollen
         'roles.view': 'Rollen ansehen',
-        'roles.manage': 'Rollen verwalten (Alles)',
         'roles.create': 'Rollen erstellen',
         'roles.edit': 'Rollen bearbeiten',
         'roles.delete': 'Rollen löschen',
-        'models.view': 'Modelle ansehen',
-        'models.manage': 'Modelle verwalten (Alles)',
-        'models.create': 'Modelle erstellen',
-        'models.edit': 'Modelle bearbeiten',
-        'models.delete': 'Modelle löschen',
+        // Gerätemodelle
+        'models.view': 'Gerätemodelle ansehen',
+        'models.create': 'Gerätemodelle erstellen',
+        'models.edit': 'Gerätemodelle bearbeiten',
+        'models.delete': 'Gerätemodelle löschen',
+        // Räume
         'rooms.view': 'Räume ansehen',
-        'rooms.manage': 'Räume verwalten (Alles)',
         'rooms.create': 'Räume erstellen',
         'rooms.edit': 'Räume bearbeiten',
         'rooms.delete': 'Räume löschen',
+        // Sonstiges
         'qr.print': 'QR-Codes drucken',
-        'logs.view': 'Logs einsehen',
+        'logs.view': 'Systemlogs einsehen',
+        // Netzwerk
         'network.view': 'Netzwerk ansehen',
         'network.edit': 'Netzwerk bearbeiten',
-        'network.assign_vlan': 'VLANs zuweisen',
-        'network.manage_ips': 'IPs verwalten',
-        'network.admin': 'Netzwerk Admin (VLANs erstellen/löschen)'
+        'network.admin': 'Netzwerk verwalten (VLANs anlegen/löschen)'
     };
 
     const permissionGroups = [
         {
-            name: 'Basis-Funktionen',
-            perms: ['logs.view', 'qr.print']
+            name: 'Geräte & Inventar',
+            perms: ['assets.view', 'assets.create', 'assets.edit', 'assets.delete', 'assets.history']
         },
         {
-            name: 'Geräte & Inventar',
-            perms: ['assets.view', 'assets.create', 'assets.edit', 'assets.delete', 'assets.history', 'models.view', 'models.create', 'models.delete', 'rooms.view', 'rooms.create', 'rooms.delete']
+            name: 'Gerätemodelle & Räume',
+            perms: ['models.view', 'models.create', 'models.edit', 'models.delete', 'rooms.view', 'rooms.create', 'rooms.edit', 'rooms.delete']
         },
         {
             name: 'Container',
@@ -791,7 +804,11 @@ const Admin = ({ defaultTab }) => {
         },
         {
             name: 'Netzwerk',
-            perms: ['network.view', 'network.edit', 'network.assign_vlan', 'network.manage_ips', 'network.admin']
+            perms: ['network.view', 'network.edit', 'network.admin']
+        },
+        {
+            name: 'Sonstiges',
+            perms: ['qr.print', 'logs.view']
         }
     ];
 
