@@ -33,7 +33,7 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
     const user = getUser();
     const location = useLocation();
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+    const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') !== 'light');
     const { settings } = useSettings();
     const { org_name: orgName, logo_path: logoPath } = settings;
 

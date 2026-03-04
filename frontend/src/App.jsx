@@ -84,7 +84,7 @@ function App() {
         if (currentUser?.theme) {
             document.documentElement.setAttribute('data-theme', currentUser.theme);
         } else {
-            const savedTheme = localStorage.getItem('theme') || 'light';
+            const savedTheme = localStorage.getItem('theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
         }
         return () => clearTimeout(timer);
