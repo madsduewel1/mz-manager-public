@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
-import { FiRepeat, FiPlus, FiEdit, FiTrash2, FiCheckCircle } from 'react-icons/fi';
-import axios from 'axios';
-import { hasRole, hasPermission } from '../utils/auth';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { authAPI, adminAPI, dashboardAPI, containersAPI } from '../services/api';
+import { getUser, hasRole, hasPermission } from '../utils/auth';
 import Modal from '../components/Modal';
 import { useNotification } from '../contexts/NotificationContext';
 import { useConfirmation } from '../contexts/ConfirmationContext';
+import { useSettings } from '../contexts/SettingsContext';
+import { FiRepeat, FiPlus, FiEdit, FiTrash2, FiCheckCircle, FiDownload, FiPrinter } from 'react-icons/fi';
 
 function Lendings() {
     const [lendings, setLendings] = useState([]);
@@ -15,6 +17,7 @@ function Lendings() {
     const [modalType, setModalType] = useState('create');
     const { success, error } = useNotification();
     const { confirm } = useConfirmation();
+    const { settings } = useSettings();
 
     const [lendingForm, setLendingForm] = useState({
         asset_id: '',
@@ -86,16 +89,18 @@ function Lendings() {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         try {
-            await axios.post('/api/lendings', lendingForm, {
+            const response = await axios.post('/api/lendings', lendingForm, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             success('Ausleihe erfolgreich erstellt');
             setShowModal(false);
             loadLendings();
+            return response;
         } catch (err) {
             error(err.response?.data?.error || 'Fehler beim Erstellen');
+            return null;
         }
     };
 
@@ -129,6 +134,126 @@ function Lendings() {
         } catch (err) {
             error(err.response?.data?.error || 'Fehler beim Löschen');
         }
+    };
+
+    const generateLendingPDF = async (lending) => {
+        const doc = new jsPDF();
+        const orgName = settings.org_name || 'MZ-Manager';
+        const user = getUser();
+
+        // Header
+        doc.setFontSize(22);
+        doc.setTextColor(40, 40, 40);
+        doc.text(orgName, 20, 30);
+
+        doc.setFontSize(16);
+        doc.setTextColor(100, 100, 100);
+        doc.text('Ausleihprotokoll / Leihvertrag', 20, 40);
+
+        doc.setLineWidth(0.5);
+        doc.line(20, 45, 190, 45);
+
+        // Lending Info
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Allgemeine Informationen:', 20, 60);
+
+        doc.setFont('helvetica', 'normal');
+        let yPos = 70;
+        doc.text(`Ausleih-ID: #${lending.id || 'Neu'}`, 20, yPos);
+        yPos += 10;
+        doc.text(`Datum der Ausleihe: ${new Date(lending.start_date).toLocaleDateString('de-DE')}`, 20, yPos);
+        yPos += 10;
+        doc.text(`Geplante Rückgabe: ${new Date(lending.planned_end_date).toLocaleDateString('de-DE')}`, 20, yPos);
+        yPos += 15;
+
+        // Borrower Info
+        doc.setFont('helvetica', 'bold');
+        doc.text('Entleiher:', 20, yPos);
+        doc.setFont('helvetica', 'normal');
+        yPos += 10;
+        doc.text(`Name: ${lending.borrower_name}`, 20, yPos);
+        yPos += 10;
+        doc.text(`Typ: ${lending.borrower_type.charAt(0).toUpperCase() + lending.borrower_type.slice(1)}`, 20, yPos);
+        yPos += 15;
+
+        // Device/Container Info
+        doc.setFont('helvetica', 'bold');
+        doc.text('Ausgeliehenes Objekt:', 20, yPos);
+        doc.setFont('helvetica', 'normal');
+        yPos += 10;
+
+        if (lending.asset_id || (lending.asset_inventory && !lending.container_name)) {
+            // It's an asset
+            const assetData = assets.find(a => a.id === lending.asset_id) || {};
+            doc.text(`Gerät: ${assetData.model_name || lending.asset_type || 'Unbekanntes Modell'}`, 20, yPos);
+            yPos += 10;
+            doc.text(`Inventarnummer: ${lending.asset_inventory || assetData.inventory_number || '-'}`, 20, yPos);
+            yPos += 10;
+            if (assetData.serial_number) {
+                doc.text(`Seriennummer: ${assetData.serial_number}`, 20, yPos);
+                yPos += 10;
+            }
+            if (assetData.manufacturer) {
+                doc.text(`Hersteller: ${assetData.manufacturer}`, 20, yPos);
+                yPos += 10;
+            }
+        } else {
+            // It's a container
+            doc.text(`Container: ${lending.container_name}`, 20, yPos);
+            yPos += 10;
+            const containerData = containers.find(c => c.id === lending.container_id) || {};
+            if (containerData.location) {
+                doc.text(`Standort: ${containerData.location}`, 20, yPos);
+                yPos += 10;
+            }
+        }
+
+        // Notes if any
+        if (lending.notes || lendingForm.notes) {
+            yPos += 5;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Anmerkungen:', 20, yPos);
+            doc.setFont('helvetica', 'normal');
+            yPos += 10;
+            const splitNotes = doc.splitTextToSize(lending.notes || lendingForm.notes, 170);
+            doc.text(splitNotes, 20, yPos);
+            yPos += (splitNotes.length * 7);
+        }
+
+        // Terms
+        yPos = Math.max(yPos + 10, 190);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Haftung und Rückgabe:', 20, yPos);
+        doc.setFont('helvetica', 'normal');
+        yPos += 7;
+        const terms = [
+            'Der Entleiher verpflichtet sich, das Gerät pfleglich zu behandeln und zum genannten',
+            'Termin unbeschädigt zurückzugeben. Bei Verlust oder Beschädigung durch unsachgemäße',
+            'Behandlung haftet der Entleiher gemäß den geltenden Bestimmungen.'
+        ];
+        terms.forEach(line => {
+            doc.text(line, 20, yPos);
+            yPos += 6;
+        });
+
+        // Signatures
+        yPos += 20;
+        doc.setLineWidth(0.2);
+        doc.line(20, yPos + 15, 90, yPos + 15);
+        doc.line(110, yPos + 15, 180, yPos + 15);
+        doc.text('Unterschrift Entleiher', 20, yPos + 22);
+        doc.text('Unterschrift Ausleiher (Schule)', 110, yPos + 22);
+
+        // Footer
+        doc.setFontSize(9);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Generiert am ${new Date().toLocaleString('de-DE')} von ${user?.username || 'System'}`, 20, 285);
+
+        doc.save(`Leihvertrag_${lending.borrower_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+        success('PDF wurde generiert.');
     };
 
     const filteredLendings = lendings.filter(l => {
@@ -235,6 +360,9 @@ function Lendings() {
                                         </td>
                                         <td data-label="Aktionen" style={{ textAlign: 'right' }}>
                                             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                <button onClick={() => generateLendingPDF(lending)} className="btn btn-sm btn-secondary" title="Leihvertrag drucken (PDF)">
+                                                    <FiPrinter />
+                                                </button>
                                                 <button onClick={() => handleReturn(lending.id)} className="btn btn-sm btn-success" title="Als zurückgegeben markieren">
                                                     <FiCheckCircle />
                                                 </button>
@@ -297,7 +425,23 @@ function Lendings() {
                     footer={
                         <>
                             <button onClick={() => setShowModal(false)} className="btn btn-secondary">Abbrechen</button>
-                            <button onClick={handleSubmit} className="btn btn-primary">Erstellen</button>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    onClick={async (e) => {
+                                        const response = await handleSubmit(e);
+                                        if (response && response.data && response.data.lending_id) {
+                                            generateLendingPDF({
+                                                ...lendingForm,
+                                                id: response.data.lending_id
+                                            });
+                                        }
+                                    }}
+                                    className="btn btn-secondary"
+                                >
+                                    <FiPrinter /> Speichern & PDF
+                                </button>
+                                <button onClick={handleSubmit} className="btn btn-primary">Erstellen</button>
+                            </div>
                         </>
                     }
                 >
