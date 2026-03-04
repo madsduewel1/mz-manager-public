@@ -135,26 +135,30 @@ function App() {
                                 element={
                                     <ProtectedRoute>
                                         <div className="layout-wrapper">
-                                            <Sidebar
-                                                isOpen={sidebarOpen}
-                                                onClose={() => setSidebarOpen(false)}
-                                                onProfileClick={() => setShowProfileModal(true)}
-                                            />
+                                            {!location.pathname.startsWith('/admin') && (
+                                                <Sidebar
+                                                    isOpen={sidebarOpen}
+                                                    onClose={() => setSidebarOpen(false)}
+                                                    onProfileClick={() => setShowProfileModal(true)}
+                                                />
+                                            )}
 
                                             <div className="main-content">
                                                 {/* Mobile Header */}
                                                 <header className="mobile-header">
                                                     <MobileHeaderBrand />
-                                                    <button
-                                                        className="mobile-nav-toggle"
-                                                        onClick={() => setSidebarOpen(!sidebarOpen)}
-                                                    >
-                                                        {sidebarOpen ? <FiX /> : <FiMenu />}
-                                                    </button>
+                                                    {!location.pathname.startsWith('/admin') && (
+                                                        <button
+                                                            className="mobile-nav-toggle"
+                                                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                                                        >
+                                                            {sidebarOpen ? <FiX /> : <FiMenu />}
+                                                        </button>
+                                                    )}
                                                 </header>
 
-                                                {/* Global Breadcrumbs – außerhalb von .page */}
-                                                <Breadcrumbs />
+                                                {/* Global Breadcrumbs – außerhalb von .page, nur wenn nicht admin */}
+                                                {!location.pathname.startsWith('/admin') && <Breadcrumbs />}
 
                                                 <div className="page">
                                                     <Routes>

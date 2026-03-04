@@ -4,7 +4,7 @@ import {
     FiSettings, FiUsers, FiShield, FiPlus, FiTrash2, FiEdit2, FiKey,
     FiUserCheck, FiUserX, FiGrid, FiList, FiCpu, FiMapPin, FiBox,
     FiLock, FiActivity, FiMoreVertical, FiChevronDown, FiCheck,
-    FiDownload, FiCopy, FiRefreshCcw, FiImage
+    FiDownload, FiCopy, FiRefreshCcw, FiImage, FiArrowLeft
 } from 'react-icons/fi';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -799,6 +799,11 @@ const Admin = ({ defaultTab }) => {
         <div className="admin-v2-layout">
             <aside className="admin-v2-sidebar">
                 <div className="admin-v2-sidebar-header">
+                    <Link to="/dashboard" className="admin-v2-back-link">
+                        <FiArrowLeft size={16} />
+                        <span>Dashboard</span>
+                    </Link>
+                    <div style={{ height: '1px', background: 'var(--color-border)', margin: '15px -20px 15px -20px', opacity: 0.5 }}></div>
                     <h3>Verwaltung</h3>
                 </div>
                 <nav className="admin-v2-nav">

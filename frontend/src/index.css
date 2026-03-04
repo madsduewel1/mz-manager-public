@@ -179,13 +179,8 @@
 
 /* Contrast Fix for Dark Mode Primary Elements */
 [data-theme='dark'] .btn-primary,
-[data-theme='dark'] .activeLink,
-[data-theme='dark'] .admin-sidebar-item.active {
+[data-theme='dark'] .activeLink {
   background: var(--color-primary);
-  color: hsl(0, 0%, 5%) !important;
-}
-
-[data-theme='dark'] .admin-sidebar-item.active svg {
   color: hsl(0, 0%, 5%) !important;
 }
 
@@ -263,12 +258,6 @@ a:hover {
   padding: 0 var(--space-lg);
 }
 
-.admin-content {
-  flex: 1;
-  padding: var(--space-2xl);
-  overflow-y: auto;
-  background: var(--color-bg-dark);
-}
 
 .grid {
   display: grid;
@@ -1035,80 +1024,7 @@ a:hover {
 /* Removed Admin labels */
 
 /* Removed Admin items state */
-.admin-sidebar-item:active {
-  transform: scale(0.98);
-}
 
-.admin-sidebar-item svg {
-  font-size: 16px;
-  opacity: 0.9;
-}
-
-.admin-content {
-  flex-grow: 1;
-  min-width: 0;
-  overflow: visible;
-}
-
-/* Responsive Admin Layout */
-@media (max-width: 992px) {
-  .admin-layout {
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .admin-sidebar {
-    width: 100%;
-    min-height: auto;
-    flex-direction: row;
-    display: flex;
-    overflow-x: auto;
-    padding: var(--space-sm);
-    gap: var(--space-xs);
-    border-right: none;
-    border-bottom: 1px solid var(--color-border);
-    margin-bottom: var(--space-md);
-    white-space: nowrap;
-    position: sticky;
-    top: 60px;
-    /* Below mobile header */
-    z-index: 100;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .admin-sidebar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .admin-sidebar-header {
-    display: none;
-  }
-
-  .admin-sidebar-group {
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-xs);
-  }
-
-  .admin-sidebar-label {
-    display: none;
-  }
-
-  .admin-sidebar-item {
-    width: auto;
-    padding: 8px 16px;
-    font-size: 13px;
-    background: var(--color-bg-light);
-    border: 1px solid var(--color-border);
-  }
-
-  .admin-sidebar-item.active {
-    background: var(--color-primary);
-    color: white;
-    border-color: var(--color-primary);
-  }
-}
 
 /* Global Mobile Improvements */
 @media (max-width: 768px) {
@@ -1197,38 +1113,6 @@ a:hover {
 }
 
 /* Old Nav Cleanup */
-.admin-nav {
-  display: none;
-}
-
-.admin-nav-group {
-  position: relative;
-}
-
-.admin-nav-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-md) var(--space-lg);
-  border: none;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  border-bottom: 2px solid transparent;
-}
-
-.admin-nav-item:hover {
-  color: var(--color-text-primary);
-  background: var(--color-bg-light);
-}
-
-.admin-nav-item.active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
-}
 
 /* Professional Dropdown Menus */
 .dropdown-menu {
@@ -1383,9 +1267,6 @@ a:hover {
 }
 
 /* Force breakout from any potential hidden containers in Admin */
-.admin-layout,
-.admin-sidebar,
-.admin-content,
 .card,
 .table-responsive {
   overflow: visible !important;
@@ -1415,6 +1296,25 @@ a:hover {
   top: 0;
   align-self: flex-start;
   min-height: 100%;
+}
+
+.admin-v2-back-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  margin-bottom: 5px;
+}
+
+.admin-v2-back-link:hover {
+  background: var(--color-bg-light);
+  color: var(--color-primary);
 }
 
 .admin-v2-sidebar-header {
@@ -1558,6 +1458,22 @@ a:hover {
     margin-bottom: 0;
   }
 
+  .admin-v2-sidebar-header h3,
+  .admin-v2-sidebar-header div {
+    display: none;
+  }
+
+  .admin-v2-sidebar-header {
+    padding: 10px var(--space-md) 0 !important;
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+  }
+
+  .admin-v2-back-link {
+    margin-bottom: 0;
+    padding: 6px 12px;
+  }
+
   .admin-v2-nav {
     flex-direction: row !important;
     overflow-x: auto;
@@ -1622,7 +1538,6 @@ a:hover {
     display: flex;
   }
 
-  .admin-content,
   .page {
     padding: var(--space-md);
   }
