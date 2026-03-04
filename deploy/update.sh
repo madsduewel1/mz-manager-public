@@ -57,6 +57,26 @@ require('dotenv').config({ path: '../backend/.env' });
     } else {
       console.log('  ✅ Error-System Tabellen bereits vorhanden');
     }
+    
+    console.log('  - Prüfe Netzwerk-Modul Tabellen...');
+    const [netTables] = await pool.query('SHOW TABLES LIKE \"network_vlans\"');
+    if (netTables.length === 0) {
+      const fs = require('fs');
+      const path = require('path');
+      const migrationPath = path.join(__dirname, 'database', 'migration_network_module.sql');
+      if (fs.existsSync(migrationPath)) {
+        const sql = fs.readFileSync(migrationPath, 'utf8');
+        const queries = sql.split(';').filter(q => q.trim() !== '');
+        for (let q of queries) {
+          await pool.query(q);
+        }
+        console.log('  ✅ Netzwerk-Modul Migration erfolgreich ausgeführt');
+      } else {
+        console.log('  ⚠️ migration_network_module.sql nicht gefunden, springe weiter...');
+      }
+    } else {
+      console.log('  ✅ Netzwerk-Modul Tabellen bereits vorhanden');
+    }
   } catch (e) {
     console.error('  ❌ Migration fehlgeschlagen:', e.message);
     process.exit(1);
