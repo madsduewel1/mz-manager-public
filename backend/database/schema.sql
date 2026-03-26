@@ -77,6 +77,17 @@ CREATE TABLE IF NOT EXISTS containers (
     INDEX idx_parent (parent_container_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- VLANs Table
+CREATE TABLE IF NOT EXISTS network_vlans (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    vlan_id INT UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    subnet VARCHAR(50),
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Assets Table (Laptops, iPads, Beamer, etc.)
 CREATE TABLE IF NOT EXISTS assets (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -107,17 +118,6 @@ CREATE TABLE IF NOT EXISTS assets (
     port_number VARCHAR(50) NULL,
     network_role ENUM('Client', 'Server', 'Printer', 'AP', 'Switch', 'Router', 'Sonstiges') DEFAULT 'Client',
     FOREIGN KEY (network_vlan_id) REFERENCES network_vlans(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- VLANs Table
-CREATE TABLE IF NOT EXISTS network_vlans (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    vlan_id INT UNIQUE NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    subnet VARCHAR(50),
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Accessories Table
