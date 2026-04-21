@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiBox, FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { containersAPI } from '../services/api';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Modal from '../components/Modal';
 import BulkImportModal from '../components/BulkImportModal';
@@ -13,20 +13,11 @@ function Containers() {
     const [containers, setContainers] = useState([]);
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
-    const [editingContainer, setEditingContainer] = useState(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     const { confirm } = useConfirmation();
     const { success, error } = useNotification();
-
-    const [formData, setFormData] = useState({
-        name: '',
-        type: 'wagen',
-        description: '',
-        location: '',
-        parent_container_id: null
-    });
+    const navigate = useNavigate();
 
     useEffect(() => {
         loadContainers();
@@ -56,40 +47,6 @@ function Containers() {
         }
     };
 
-    const openCreateModal = () => {
-        setEditingContainer(null);
-        setFormData({ name: '', type: 'wagen', description: '', location: '', parent_container_id: null });
-        setShowModal(true);
-    };
-
-    const openEditModal = (container) => {
-        setEditingContainer(container);
-        setFormData({
-            name: container.name,
-            type: container.type,
-            description: container.description || '',
-            location: container.location || '',
-            parent_container_id: container.parent_container_id
-        });
-        setShowModal(true);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            if (editingContainer) {
-                await containersAPI.update(editingContainer.id, formData);
-                success('Container aktualisiert');
-            } else {
-                await containersAPI.create(formData);
-                success('Container erstellt');
-            }
-            setShowModal(false);
-            loadContainers();
-        } catch (err) {
-            error(err.response?.data?.error || 'Fehler beim Speichern');
-        }
-    };
 
     const handleDelete = async (id) => {
         const isConfirmed = await confirm({
@@ -190,7 +147,7 @@ function Containers() {
                                 <>
                                     {hasPermission('containers.edit') && (
                                         <button
-                                            onClick={() => openEditModal(container)}
+                                            onClick={() => navigate(`/containers/${container.id}/edit`)}
                                             className="btn btn-sm btn-secondary"
                                             title="Bearbeiten"
                                         >
@@ -232,7 +189,7 @@ function Containers() {
                         </button>
                     )}
                     {hasPermission('containers.create') && (
-                        <button onClick={openCreateModal} className="btn btn-primary">
+                        <button onClick={() => navigate('/containers/new')} className="btn btn-primary">
                             <FiPlus />
                             Neuer Container
                         </button>
@@ -295,7 +252,7 @@ function Containers() {
                     <div className="empty-state-icon"><FiBox /></div>
                     <p>Keine Container gefunden, die den Filtern entsprechen</p>
                     {containers.length === 0 && hasPermission('containers.create') && (
-                        <button onClick={openCreateModal} className="btn btn-primary mt-lg">
+                        <button onClick={() => navigate('/containers/new')} className="btn btn-primary mt-lg">
                             <FiPlus />
                             Ersten Container erstellen
                         </button>
@@ -319,75 +276,6 @@ function Containers() {
                     </table>
                 </div>
             )}
-
-            {/* Create/Edit Modal */}
-            <Modal
-                isOpen={showModal}
-                onClose={() => setShowModal(false)}
-                title={editingContainer ? 'Container bearbeiten' : 'Neuer Container'}
-                footer={
-                    <>
-                        <button onClick={() => setShowModal(false)} className="btn btn-secondary">Abbrechen</button>
-                        <button onClick={handleSubmit} className="btn btn-primary">Speichern</button>
-                    </>
-                }
-            >
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label className="form-label">Name *</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="z.B. iPad-Wagen 7a"
-                            required
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Typ *</label>
-                        <select
-                            className="form-select"
-                            value={formData.type}
-                            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                            required
-                        >
-                            <option value="wagen">Wagen</option>
-                            <option value="koffer">Koffer</option>
-                            <option value="fach">Fach</option>
-                            <option value="sonstiges">Sonstiges</option>
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Standort (Raum)</label>
-                        <select
-                            className="form-select"
-                            value={formData.parent_container_id || ''}
-                            onChange={(e) => setFormData({ ...formData, parent_container_id: e.target.value || null })}
-                        >
-                            <option value="">-- Raum wählen (Optional) --</option>
-                            {rooms.map(room => (
-                                <option key={room.id} value={room.id}>
-                                    {room.name} {room.building ? `(${room.building})` : ''}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Beschreibung</label>
-                        <textarea
-                            className="form-textarea"
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            placeholder="Optionale Beschreibung..."
-                            rows="3"
-                        />
-                    </div>
-                </form>
-            </Modal>
         </div>
     );
 }

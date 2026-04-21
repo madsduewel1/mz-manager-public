@@ -3,6 +3,7 @@ import {
     FiPlus, FiTrash2, FiEdit2, FiSearch,
     FiFilter, FiDownload, FiMonitor, FiCpu, FiX, FiCheck
 } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import { accessoriesAPI, assetsAPI } from '../services/api';
 import { hasPermission } from '../utils/auth';
 import { useNotification } from '../contexts/NotificationContext';
@@ -111,7 +112,7 @@ function AccessoryCard({ item, onEdit, onDelete, canManage }) {
                     <button
                         className="btn btn-secondary"
                         style={{ flex: 1, minHeight: '44px', justifyContent: 'center' }}
-                        onClick={() => onEdit(item)}
+                        onClick={() => navigate(`/accessories/${item.id}/edit`)}
                     >
                         <FiEdit2 size={14} /> Bearbeiten
                     </button>
@@ -212,17 +213,9 @@ function Accessories() {
     const [statusFilter, setStatusFilter] = useState('all');
     const [showFilterModal, setShowFilterModal] = useState(false);
 
-    // Form Modal
-    const [showFormModal, setShowFormModal] = useState(false);
-    const [editingItem, setEditingItem] = useState(null);
-    const initialFormState = {
-        name: '', category: '', inventory_number: '', serial_number: '',
-        quantity: 1, status: 'ok', location: '', assigned_device_id: '', notes: ''
-    };
-    const [formData, setFormData] = useState(initialFormState);
-
     const { success, error: notifyError } = useNotification();
     const { confirm } = useConfirmation();
+    const navigate = useNavigate();
 
     useEffect(() => { loadData(); }, []);
 
@@ -244,22 +237,6 @@ function Accessories() {
         }
     };
 
-    const handleFormSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            if (editingItem) {
-                await accessoriesAPI.updateAccessory(editingItem.id, formData);
-                success('Zubehör aktualisiert');
-            } else {
-                await accessoriesAPI.createAccessory(formData);
-                success('Zubehör hinzugefügt');
-            }
-            setShowFormModal(false);
-            loadData();
-        } catch (err) {
-            notifyError(err.response?.data?.error || 'Fehler beim Speichern');
-        }
-    };
 
     const handleDelete = async (item) => {
         const confirmed = await confirm({
@@ -277,27 +254,6 @@ function Accessories() {
                 notifyError(err.response?.data?.error || 'Fehler beim Löschen');
             }
         }
-    };
-
-    const openFormModal = (item = null) => {
-        if (item) {
-            setEditingItem(item);
-            setFormData({
-                name: item.name || '',
-                category: item.category || '',
-                inventory_number: item.inventory_number || '',
-                serial_number: item.serial_number || '',
-                quantity: item.quantity,
-                status: item.status || 'ok',
-                location: item.location || '',
-                assigned_device_id: item.assigned_device_id || '',
-                notes: item.notes || ''
-            });
-        } else {
-            setEditingItem(null);
-            setFormData(initialFormState);
-        }
-        setShowFormModal(true);
     };
 
     const filteredItems = items.filter(i => {
@@ -361,9 +317,9 @@ function Accessories() {
                     <h1 style={{ margin: 0 }}>Zubehör</h1>
                     {!isMobile && <p className="text-muted">Kabel, Adapter, Mäuse und weiteres Equipment verwalten</p>}
                 </div>
-                {canManage && (
-                    <button className="btn btn-primary" onClick={() => openFormModal()}>
-                        <FiPlus /> Zubehör hinzufügen
+                {hasPermission('accessories.manage') && (
+                    <button onClick={() => navigate('/accessories/new')} className="btn btn-primary">
+                        <FiPlus /> {isMobile ? 'Neu' : 'Zubehör hinzufügen'}
                     </button>
                 )}
             </div>
@@ -464,9 +420,9 @@ function Accessories() {
                             <AccessoryCard
                                 key={item.id}
                                 item={item}
-                                canManage={canManage}
-                                onEdit={openFormModal}
+                                onEdit={() => navigate(`/accessories/${item.id}/edit`)}
                                 onDelete={handleDelete}
+                                canManage={canManage}
                             />
                         ))}
                     </div>
@@ -517,7 +473,7 @@ function Accessories() {
                                     {canManage && (
                                         <td style={{ textAlign: 'right' }}>
                                             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                                <button className="btn btn-secondary btn-icon" onClick={() => openFormModal(item)} title="Bearbeiten">
+                                                <button className="btn btn-secondary btn-icon" onClick={() => navigate(`/accessories/${item.id}/edit`)} title="Bearbeiten">
                                                     <FiEdit2 size={14} />
                                                 </button>
                                                 <button className="btn btn-secondary btn-icon" style={{ color: 'var(--color-error)' }} onClick={() => handleDelete(item)} title="Löschen">
@@ -546,145 +502,6 @@ function Accessories() {
                 setSearchTerm={setSearchTerm}
             />
 
-            {/* Add/Edit Form Modal */}
-            <Modal
-                isOpen={showFormModal}
-                onClose={() => setShowFormModal(false)}
-                title={editingItem ? 'Zubehör bearbeiten' : 'Zubehör hinzufügen'}
-                maxWidth="500px"
-            >
-                <form onSubmit={handleFormSubmit}>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-                        gap: isMobile ? '0' : '16px'
-                    }}>
-                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                            <label className="form-label">Bezeichnung *</label>
-                            <input
-                                type="text"
-                                className="form-input"
-                                value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                required
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Kategorie *</label>
-                            <input
-                                type="text"
-                                className="form-input"
-                                value={formData.category}
-                                onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                placeholder="z.B. Kabel, Adapter..."
-                                list="category-options"
-                                required
-                            />
-                            <datalist id="category-options">
-                                {categories.map(c => <option key={c} value={c} />)}
-                                {Object.keys(CATEGORY_COLORS).map(c => !categories.includes(c) && <option key={c} value={c} />)}
-                            </datalist>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Menge *</label>
-                            <input
-                                type="number"
-                                className="form-input"
-                                value={formData.quantity}
-                                onChange={e => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-                                min="0" inputMode="numeric"
-                                required
-                            />
-                        </div>
-
-                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                            <div style={{ display: 'flex', gap: '16px' }}>
-                                <div style={{ flex: 1 }}>
-                                    <label className="form-label">Inventarnummer</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        value={formData.inventory_number}
-                                        onChange={e => setFormData({ ...formData, inventory_number: e.target.value })}
-                                        placeholder="Optional"
-                                    />
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <label className="form-label">Seriennummer</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        value={formData.serial_number}
-                                        onChange={e => setFormData({ ...formData, serial_number: e.target.value })}
-                                        placeholder="Optional"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Standort</label>
-                            <input
-                                type="text"
-                                className="form-input"
-                                value={formData.location}
-                                onChange={e => setFormData({ ...formData, location: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Zustand</label>
-                            <select
-                                className="form-select"
-                                value={formData.status}
-                                onChange={e => setFormData({ ...formData, status: e.target.value })}
-                            >
-                                <option value="ok">Ok</option>
-                                <option value="defekt">Defekt</option>
-                                <option value="in_reparatur">In Reparatur</option>
-                                <option value="fehlt">Fehlt</option>
-                            </select>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Zugeordnetes Gerät</label>
-                            <select
-                                className="form-select"
-                                value={formData.assigned_device_id || ''}
-                                onChange={e => setFormData({ ...formData, assigned_device_id: e.target.value })}
-                            >
-                                <option value="">- Kein Gerät -</option>
-                                {devices.map(d => (
-                                    <option key={d.id} value={d.id}>
-                                        {d.model || d.type} {d.inventory_number ? `(${d.inventory_number})` : ''}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                            <label className="form-label">Notizen</label>
-                            <textarea
-                                className="form-textarea"
-                                rows="3"
-                                value={formData.notes}
-                                onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
-                        <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowFormModal(false)}>
-                            Abbrechen
-                        </button>
-                        <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                            Speichern
-                        </button>
-                    </div>
-                </form>
-            </Modal>
         </div>
     );
 }

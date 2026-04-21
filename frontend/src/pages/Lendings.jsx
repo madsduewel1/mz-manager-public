@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { lendingsAPI, assetsAPI, containersAPI } from '../services/api';
@@ -15,21 +16,10 @@ function Lendings() {
     const [containers, setContainers] = useState([]);
     const [accessories, setAccessories] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
-    const [modalType, setModalType] = useState('create');
     const { success, error } = useNotification();
     const { confirm } = useConfirmation();
     const { settings } = useSettings();
-
-    const [lendingForm, setLendingForm] = useState({
-        asset_id: '',
-        container_id: '',
-        accessory_id: '',
-        borrower_name: '',
-        borrower_type: 'klasse',
-        start_date: new Date().toISOString().split('T')[0],
-        planned_end_date: ''
-    });
+    const navigate = useNavigate();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('');
@@ -86,33 +76,7 @@ function Lendings() {
         }
     };
 
-    const openCreateModal = () => {
-        setModalType('create');
-        setLendingForm({
-            asset_id: '',
-            container_id: '',
-            accessory_id: '',
-            borrower_name: '',
-            borrower_type: 'klasse',
-            start_date: new Date().toISOString().split('T')[0],
-            planned_end_date: ''
-        });
-        setShowModal(true);
-    };
 
-    const handleSubmit = async (e) => {
-        if (e) e.preventDefault();
-        try {
-            const response = await lendingsAPI.create(lendingForm);
-            success('Ausleihe erfolgreich erstellt');
-            setShowModal(false);
-            loadLendings();
-            return response;
-        } catch (err) {
-            error(err.response?.data?.error || 'Fehler beim Erstellen');
-            return null;
-        }
-    };
 
     const handleReturn = async (id) => {
         try {
@@ -226,13 +190,13 @@ function Lendings() {
         }
 
         // Notes if any
-        if (lending.notes || lendingForm.notes) {
+        if (lending.notes) {
             yPos += 5;
             doc.setFont('helvetica', 'bold');
             doc.text('Anmerkungen:', 20, yPos);
             doc.setFont('helvetica', 'normal');
             yPos += 10;
-            const splitNotes = doc.splitTextToSize(lending.notes || lendingForm.notes, 170);
+            const splitNotes = doc.splitTextToSize(lending.notes, 170);
             doc.text(splitNotes, 20, yPos);
             yPos += (splitNotes.length * 7);
         }
@@ -291,7 +255,7 @@ function Lendings() {
             <div className="flex justify-between items-center mb-xl">
                 <h1><FiRepeat style={{ display: 'inline', marginRight: '10px' }} />Ausleihen</h1>
                 {canCreate && (
-                    <button onClick={openCreateModal} className="btn btn-primary">
+                    <button onClick={() => navigate('/lendings/new')} className="btn btn-primary">
                         <FiPlus /> Neue Ausleihe
                     </button>
                 )}
@@ -444,175 +408,6 @@ function Lendings() {
                 </div>
             )}
 
-            {/* Create Modal */}
-            {showModal && (
-                <Modal
-                    isOpen={showModal}
-                    onClose={() => setShowModal(false)}
-                    title="Neue Ausleihe erstellen"
-                    footer={
-                        <>
-                            <button onClick={() => setShowModal(false)} className="btn btn-secondary">Abbrechen</button>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button
-                                    onClick={async (e) => {
-                                        const response = await handleSubmit(e);
-                                        if (response && response.data && response.data.lending_id) {
-                                            generateLendingPDF({
-                                                ...lendingForm,
-                                                id: response.data.lending_id
-                                            });
-                                        }
-                                    }}
-                                    className="btn btn-secondary"
-                                >
-                                    <FiPrinter /> Speichern & PDF
-                                </button>
-                                <button onClick={handleSubmit} className="btn btn-primary">Erstellen</button>
-                            </div>
-                        </>
-                    }
-                >
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label className="form-label">Was wird ausgeliehen? *</label>
-                            <select
-                                className="form-select"
-                                value={lendingForm.asset_id ? 'asset' : lendingForm.container_id ? 'container' : lendingForm.accessory_id ? 'accessory' : ''}
-                                onChange={(e) => {
-                                    if (e.target.value === 'asset') {
-                                        setLendingForm({ ...lendingForm, container_id: '', accessory_id: '', asset_id: assets[0]?.id || '' });
-                                    } else if (e.target.value === 'container') {
-                                        setLendingForm({ ...lendingForm, asset_id: '', accessory_id: '', container_id: containers[0]?.id || '' });
-                                    } else {
-                                        setLendingForm({ ...lendingForm, asset_id: '', container_id: '', accessory_id: accessories[0]?.id || '' });
-                                    }
-                                }}
-                                required
-                            >
-                                <option value="">Bitte wählen...</option>
-                                <option value="asset">Einzelnes Gerät</option>
-                                <option value="container">Container (Wagen)</option>
-                                {settings.module_accessories_enabled === 'true' && (
-                                    <option value="accessory">Zubehör</option>
-                                )}
-                            </select>
-                        </div>
-
-                        {lendingForm.asset_id !== '' && (
-                            <div className="form-group">
-                                <label className="form-label">Gerät *</label>
-                                <select
-                                    className="form-select"
-                                    value={lendingForm.asset_id}
-                                    onChange={(e) => setLendingForm({ ...lendingForm, asset_id: e.target.value })}
-                                    required
-                                >
-                                    <option value="">Gerät wählen...</option>
-                                    {assets
-                                        .filter(asset => !activeLendings.some(l => l.asset_id === asset.id))
-                                        .map(asset => (
-                                            <option key={asset.id} value={asset.id}>
-                                                {asset.inventory_number} - {asset.model}
-                                            </option>
-                                        ))}
-                                </select>
-                            </div>
-                        )}
-
-                        {lendingForm.container_id !== '' && (
-                            <div className="form-group">
-                                <label className="form-label">Container *</label>
-                                <select
-                                    className="form-select"
-                                    value={lendingForm.container_id}
-                                    onChange={(e) => setLendingForm({ ...lendingForm, container_id: e.target.value })}
-                                    required
-                                >
-                                    <option value="">Container wählen...</option>
-                                    {containers
-                                        .filter(c => !activeLendings.some(l => l.container_id === c.id))
-                                        .map(container => (
-                                            <option key={container.id} value={container.id}>
-                                                {container.name} - {container.location}
-                                            </option>
-                                        ))}
-                                </select>
-                            </div>
-                        )}
-
-                        {lendingForm.accessory_id !== '' && (
-                            <div className="form-group">
-                                <label className="form-label">Zubehör *</label>
-                                <select
-                                    className="form-select"
-                                    value={lendingForm.accessory_id}
-                                    onChange={(e) => setLendingForm({ ...lendingForm, accessory_id: e.target.value })}
-                                    required
-                                >
-                                    <option value="">Zubehör wählen...</option>
-                                    {accessories
-                                        .filter(acc => !activeLendings.some(l => l.accessory_id === acc.id))
-                                        .map(acc => (
-                                            <option key={acc.id} value={acc.id}>
-                                                {acc.name} ({acc.category})
-                                            </option>
-                                        ))}
-                                </select>
-                            </div>
-                        )}
-
-                        <div className="form-group">
-                            <label className="form-label">Entleiher *</label>
-                            <input
-                                type="text"
-                                className="form-input"
-                                value={lendingForm.borrower_name}
-                                onChange={(e) => setLendingForm({ ...lendingForm, borrower_name: e.target.value })}
-                                placeholder="z.B. Klasse 10b, Max Mustermann"
-                                required
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Entleiher-Typ *</label>
-                            <select
-                                className="form-select"
-                                value={lendingForm.borrower_type}
-                                onChange={(e) => setLendingForm({ ...lendingForm, borrower_type: e.target.value })}
-                                required
-                            >
-                                <option value="klasse">Klasse</option>
-                                <option value="Lehrer">Lehrer</option>
-                                <option value="Schüler">Schüler</option>
-                                <option value="extern">Extern</option>
-                            </select>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Startdatum *</label>
-                            <input
-                                type="date"
-                                className="form-input"
-                                value={lendingForm.start_date}
-                                onChange={(e) => setLendingForm({ ...lendingForm, start_date: e.target.value })}
-                                required
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Geplantes Rückgabedatum *</label>
-                            <input
-                                type="date"
-                                className="form-input"
-                                value={lendingForm.planned_end_date}
-                                onChange={(e) => setLendingForm({ ...lendingForm, planned_end_date: e.target.value })}
-                                required
-                            />
-                        </div>
-                    </form>
-                </Modal>
-            )}
         </div>
     );
 }

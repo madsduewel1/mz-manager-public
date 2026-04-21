@@ -20,7 +20,14 @@ const Breadcrumbs = () => {
         'models': 'Gerätemodelle',
         'qr-codes': 'QR-Codes',
         'logs': 'System-Logs',
-        'settings': 'Einstellungen'
+        'settings': 'Einstellungen',
+        'network': 'Netzwerk',
+        'vlans': 'VLANs',
+        'accessories': 'Zubehör',
+        'new': 'Erstellen',
+        'edit': 'Bearbeiten',
+        'assign': 'Zuweisen',
+        'report': 'Fehler melden'
     };
 
     if (pathnames.length === 0) return null;

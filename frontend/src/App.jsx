@@ -21,6 +21,11 @@ const Admin = lazy(() => import('./pages/Admin'));
 const Network = lazy(() => import('./pages/Network'));
 const Accessories = lazy(() => import('./pages/Accessories'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const AssetFormPage = lazy(() => import('./pages/AssetFormPage'));
+const ContainerFormPage = lazy(() => import('./pages/ContainerFormPage'));
+const NetworkFormPage = lazy(() => import('./pages/NetworkFormPage'));
+const AccessoryFormPage = lazy(() => import('./pages/AccessoryFormPage'));
+const LendingFormPage = lazy(() => import('./pages/LendingFormPage'));
 
 import Sidebar from './components/Sidebar';
 import Breadcrumbs from './components/Breadcrumbs';
@@ -168,13 +173,23 @@ function App() {
                                                             <Route path="/" element={<Dashboard />} />
                                                             <Route path="/dashboard" element={<Dashboard />} />
                                                             <Route path="/assets" element={<Assets />} />
+                                                            <Route path="/assets/new" element={<AssetFormPage />} />
+                                                            <Route path="/assets/:id/edit" element={<AssetFormPage />} />
                                                             <Route path="/assets/:id" element={<AssetDetail />} />
                                                             <Route path="/containers" element={<Containers />} />
+                                                            <Route path="/containers/new" element={<ContainerFormPage />} />
+                                                            <Route path="/containers/:id/edit" element={<ContainerFormPage />} />
                                                             <Route path="/containers/:id" element={<ContainerDetail />} />
                                                             <Route path="/lendings" element={<Lendings />} />
+                                                            <Route path="/lendings/new" element={<LendingFormPage />} />
                                                             <Route path="/error-reports" element={<ErrorReports />} />
                                                             <Route path="/network" element={<Network />} />
+                                                            <Route path="/network/vlans/new" element={<NetworkFormPage type="vlan" />} />
+                                                            <Route path="/network/vlans/:id/edit" element={<NetworkFormPage type="vlan" />} />
+                                                            <Route path="/network/devices/:id/assign" element={<NetworkFormPage type="device" />} />
                                                             <Route path="/accessories" element={<Accessories />} />
+                                                            <Route path="/accessories/new" element={<AccessoryFormPage />} />
+                                                            <Route path="/accessories/:id/edit" element={<AccessoryFormPage />} />
                                                             <Route path="/admin" element={<Admin />} />
                                                             <Route path="/admin/users" element={<Admin defaultTab="users" />} />
                                                             <Route path="/admin/roles" element={<Admin defaultTab="roles" />} />

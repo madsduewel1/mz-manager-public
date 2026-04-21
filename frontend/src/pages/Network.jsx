@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     FiRepeat, FiPlus, FiTrash2, FiEdit2, FiSearch,
     FiFilter, FiDownload, FiAlertCircle, FiActivity,
@@ -40,7 +41,7 @@ function getRoleIcon(role) {
 }
 
 /* ─── Device Card (Mobile) ────────────────────────────────── */
-function DeviceCard({ device, vlans, onEdit }) {
+function DeviceCard({ device, vlans, onEdit, navigate }) {
     const vlanColor = vlans.findIndex(v => v.id === device.network_vlan_id);
     const accentColor = vlanColor >= 0 ? VLAN_COLORS[vlanColor % VLAN_COLORS.length] : 'var(--color-border)';
 
@@ -179,21 +180,9 @@ function Network() {
     const [vlanFilter, setVlanFilter] = useState('all');
     const [showFilterModal, setShowFilterModal] = useState(false);
 
-    // Modals
-    const [showVlanModal, setShowVlanModal] = useState(false);
-    const [showAssignModal, setShowAssignModal] = useState(false);
-    const [editingVlan, setEditingVlan] = useState(null);
-    const [assigningDevice, setAssigningDevice] = useState(null);
-
-    // Forms
-    const [vlanForm, setVlanForm] = useState({ vlan_id: '', name: '', subnet: '', description: '' });
-    const [assignForm, setAssignForm] = useState({
-        network_vlan_id: '', ip_address: '', mac_address: '',
-        dhcp_enabled: false, switch_name: '', port_number: '', network_role: 'Client'
-    });
-
     const { success, error: notifyError } = useNotification();
     const { confirm } = useConfirmation();
+    const navigate = useNavigate();
 
     useEffect(() => { loadData(); }, []);
 
@@ -212,65 +201,16 @@ function Network() {
 
     const handleImportAssets = () => { loadData(); success('Assets wurden aktualisiert'); };
 
-    const handleVlanSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            await networkAPI.saveVlan(vlanForm);
-            success(vlanForm.id ? 'VLAN aktualisiert' : 'VLAN erstellt');
-            setShowVlanModal(false);
-            loadData();
-        } catch (err) {
-            notifyError(err.response?.data?.error || 'Fehler beim Speichern');
-        }
-    };
-
     const handleDeleteVlan = async (vlan) => {
-        const confirmed = await confirm({
-            title: 'VLAN löschen',
-            message: `VLAN "${vlan.name}" (ID: ${vlan.vlan_id}) wirklich löschen?`,
-            confirmLabel: 'Löschen', confirmVariant: 'danger'
-        });
-        if (confirmed) {
+        if (await confirm(`VLAN ${vlan.vlan_id} wirklich löschen?`)) {
             try {
                 await networkAPI.deleteVlan(vlan.id);
-                success('VLAN gelöscht');
                 loadData();
+                success('VLAN gelöscht');
             } catch (err) {
                 notifyError(err.response?.data?.error || 'Fehler beim Löschen');
             }
         }
-    };
-
-    const handleAssignSubmit = async (e) => {
-        if (e) e.preventDefault();
-        try {
-            await networkAPI.assignDevice({ asset_id: assigningDevice.id, ...assignForm });
-            success('Netzwerkkonfiguration gespeichert');
-            setShowAssignModal(false);
-            loadData();
-        } catch (err) {
-            notifyError(err.response?.data?.error || 'Fehler beim Speichern');
-        }
-    };
-
-    const openVlanModal = (vlan = null) => {
-        setVlanForm(vlan ? { ...vlan } : { vlan_id: '', name: '', subnet: '', description: '' });
-        setEditingVlan(vlan);
-        setShowVlanModal(true);
-    };
-
-    const openAssignModal = (device) => {
-        setAssigningDevice(device);
-        setAssignForm({
-            network_vlan_id: device.network_vlan_id || '',
-            ip_address: device.ip_address || '',
-            mac_address: device.mac_address || '',
-            dhcp_enabled: !!device.dhcp_enabled,
-            switch_name: device.switch_name || '',
-            port_number: device.port_number || '',
-            network_role: device.network_role || 'Client'
-        });
-        setShowAssignModal(true);
     };
 
     const filteredDevices = devices.filter(d => {
@@ -284,11 +224,9 @@ function Network() {
             d.network_vlan_id?.toString() === vlanFilter;
         return matchesSearch && matchesVlan;
     }).sort((a, b) => {
-        // 1. Nach VLAN-ID sortieren (numerisch, ohne VLAN ans Ende)
         const vlanA = a.vlan_id ?? Infinity;
         const vlanB = b.vlan_id ?? Infinity;
         if (vlanA !== vlanB) return vlanA - vlanB;
-        // 2. Nach IP-Adresse sortieren (numerisch)
         const ipToNum = (ip) => {
             if (!ip) return Infinity;
             const parts = ip.split('.');
@@ -297,7 +235,6 @@ function Network() {
         };
         const ipCmp = ipToNum(a.ip_address) - ipToNum(b.ip_address);
         if (ipCmp !== 0) return ipCmp;
-        // 3. Nach Inventarnummer (alphanumerisch)
         return a.inventory_number.localeCompare(b.inventory_number, 'de', { numeric: true, sensitivity: 'base' });
     });
 
@@ -356,7 +293,7 @@ function Network() {
                         </span>
                     </td>
                     <td>
-                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openAssignModal(device)}>
+                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => navigate(`/network/devices/${device.id}/assign`)}>
                             <FiEdit2 />
                         </button>
                     </td>
@@ -511,7 +448,13 @@ function Network() {
                     {isMobile ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {filteredDevices.map(device => (
-                                <DeviceCard key={device.id} device={device} vlans={vlans} onEdit={openAssignModal} />
+                                <DeviceCard
+                                    key={device.id}
+                                    device={device}
+                                    vlans={vlans}
+                                    onEdit={() => navigate(`/network/devices/${device.id}/assign`)}
+                                    navigate={navigate}
+                                />
                             ))}
                             {filteredDevices.length === 0 && (
                                 <div className="card text-center py-xl text-muted">
@@ -557,7 +500,7 @@ function Network() {
                             <button
                                 className="btn btn-primary"
                                 style={{ minHeight: '44px' }}
-                                onClick={() => openVlanModal()}
+                                onClick={() => navigate('/network/vlans/new')}
                             >
                                 <FiPlus /> {isMobile ? 'Neu' : 'Neues VLAN anlegen'}
                             </button>
@@ -591,7 +534,7 @@ function Network() {
                                             <button
                                                 className="btn btn-secondary btn-sm"
                                                 style={{ flex: 1, minHeight: '40px', justifyContent: 'center' }}
-                                                onClick={() => openVlanModal(vlan)}
+                                                onClick={() => navigate(`/network/vlans/${vlan.id}/edit`)}
                                             >
                                                 <FiEdit2 /> Bearbeiten
                                             </button>
@@ -652,7 +595,7 @@ function Network() {
                                                 <div className="flex justify-end gap-xs">
                                                     {hasAdminPermission() && (
                                                         <>
-                                                            <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openVlanModal(vlan)}><FiEdit2 /></button>
+                                                            <button className="btn btn-ghost btn-icon btn-sm" onClick={() => navigate(`/network/vlans/${vlan.id}/edit`)}><FiEdit2 /></button>
                                                             <button className="btn btn-ghost btn-icon btn-sm text-danger" onClick={() => handleDeleteVlan(vlan)}><FiTrash2 /></button>
                                                         </>
                                                     )}
@@ -685,98 +628,6 @@ function Network() {
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
             />
-
-            {/* ── VLAN Modal ── */}
-            <Modal
-                isOpen={showVlanModal}
-                onClose={() => setShowVlanModal(false)}
-                title={editingVlan ? 'VLAN bearbeiten' : 'Neues VLAN'}
-                footer={
-                    <>
-                        <button className="btn btn-secondary" onClick={() => setShowVlanModal(false)}>Abbrechen</button>
-                        <button className="btn btn-primary" onClick={handleVlanSubmit}>Speichern</button>
-                    </>
-                }
-            >
-                <form onSubmit={handleVlanSubmit}>
-                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
-                        <div className="form-group">
-                            <label className="form-label">VLAN-ID *</label>
-                            <input
-                                type="number" className="form-input" required
-                                style={{ minHeight: '48px' }}
-                                inputMode="numeric"
-                                value={vlanForm.vlan_id}
-                                onChange={e => setVlanForm({ ...vlanForm, vlan_id: e.target.value })}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label">Name *</label>
-                            <input
-                                type="text" className="form-input" required
-                                style={{ minHeight: '48px' }}
-                                placeholder="z.B. Management, VoIP"
-                                value={vlanForm.name}
-                                onChange={e => setVlanForm({ ...vlanForm, name: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Subnetz (optional)</label>
-                        <input
-                            type="text" className="form-input"
-                            style={{ minHeight: '48px' }}
-                            placeholder="z.B. 10.0.10.0/24"
-                            inputMode="decimal"
-                            value={vlanForm.subnet}
-                            onChange={e => setVlanForm({ ...vlanForm, subnet: e.target.value })}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="form-label">Beschreibung</label>
-                        <textarea
-                            className="form-textarea" rows="3"
-                            value={vlanForm.description}
-                            onChange={e => setVlanForm({ ...vlanForm, description: e.target.value })}
-                        />
-                    </div>
-                </form>
-            </Modal>
-
-            {/* ── Assign Modal ── */}
-            <Modal
-                isOpen={showAssignModal}
-                onClose={() => setShowAssignModal(false)}
-                title={`Konfiguration: ${assigningDevice?.inventory_number}`}
-                footer={
-                    <>
-                        <button className="btn btn-secondary" onClick={() => setShowAssignModal(false)}>Abbrechen</button>
-                        <button className="btn btn-primary" onClick={handleAssignSubmit}>Speichern</button>
-                    </>
-                }
-            >
-                <form onSubmit={handleAssignSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div className="form-group">
-                        <label className="form-label">Zugeordnetes VLAN</label>
-                        <select
-                            className="form-select"
-                            style={{ minHeight: '48px' }}
-                            value={assignForm.network_vlan_id}
-                            onChange={e => setAssignForm({ ...assignForm, network_vlan_id: e.target.value })}
-                        >
-                            <option value="">Kein VLAN</option>
-                            {vlans.map(v => <option key={v.id} value={v.id}>ID {v.vlan_id} - {v.name}</option>)}
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Netzwerkrolle</label>
-                        <select
-                            className="form-select"
-                            style={{ minHeight: '48px' }}
-                            value={assignForm.network_role || 'Client'}
-                            onChange={e => setAssignForm({ ...assignForm, network_role: e.target.value })}
-                        >
                             <option value="Client">Client / Workstation</option>
                             <option value="Server">Server</option>
                             <option value="Printer">Drucker</option>

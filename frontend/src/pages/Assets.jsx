@@ -16,24 +16,10 @@ function Assets() {
     const [containers, setContainers] = useState([]);
     const [deviceModels, setDeviceModels] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
-    const [showScanner, setShowScanner] = useState(false);
-    const [editingAsset, setEditingAsset] = useState(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const navigate = useNavigate();
     const { confirm } = useConfirmation();
     const { success, error } = useNotification();
-
-    // Form state
-    const [formData, setFormData] = useState({
-        inventory_number: '',
-        serial_number: '',
-        type: 'laptop',
-        model: '',
-        manufacturer: '',
-        status: 'ok',
-        container_id: ''
-    });
 
     const [filterContainer, setFilterContainer] = useState('');
     const [filterType, setFilterType] = useState('');
@@ -133,7 +119,7 @@ function Assets() {
                                 <>
                                     {hasPermission('assets.edit') && (
                                         <button
-                                            onClick={() => openEditModal(asset)}
+                                            onClick={() => navigate(`/assets/${asset.id}/edit`)}
                                             className="btn btn-sm btn-secondary"
                                             title="Bearbeiten"
                                         >
@@ -191,64 +177,6 @@ function Assets() {
         }
     };
 
-    const handleModelChange = (e) => {
-        const selectedModelName = e.target.value;
-        const modelData = deviceModels.find(m => m.model_name === selectedModelName);
-
-        if (modelData) {
-            setFormData({
-                ...formData,
-                model: modelData.model_name,
-                manufacturer: modelData.manufacturer,
-                type: modelData.type
-            });
-        } else {
-            setFormData({ ...formData, model: selectedModelName });
-        }
-    };
-
-    const openCreateModal = () => {
-        setEditingAsset(null);
-        setFormData({
-            inventory_number: '',
-            serial_number: '',
-            type: 'laptop',
-            model: '',
-            manufacturer: '',
-            status: 'ok',
-            container_id: ''
-        });
-        setShowModal(true);
-    };
-
-    const openEditModal = (asset) => {
-        setEditingAsset(asset);
-        setFormData({
-            inventory_number: asset.inventory_number,
-            serial_number: asset.serial_number || '',
-            type: asset.type,
-            model: asset.model || '',
-            manufacturer: asset.manufacturer || '',
-            status: asset.status,
-            container_id: asset.container_id || ''
-        });
-        setShowModal(true);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            if (editingAsset) {
-                await assetsAPI.update(editingAsset.id, formData);
-            } else {
-                await assetsAPI.create(formData);
-            }
-            setShowModal(false);
-            loadAssets();
-        } catch (err) {
-            error(err.response?.data?.error || 'Fehler beim Speichern');
-        }
-    };
 
     const handleDelete = async (id) => {
         const isConfirmed = await confirm({
@@ -314,7 +242,7 @@ function Assets() {
                         </button>
                     )}
                     {hasPermission('assets.create') && (
-                        <button onClick={openCreateModal} className="btn btn-primary">
+                        <button onClick={() => navigate('/assets/new')} className="btn btn-primary">
                             <FiPlus />
                             Neues Gerät
                         </button>
@@ -385,7 +313,7 @@ function Assets() {
                     <div className="empty-state-icon"><FiPackage /></div>
                     <p>Keine Geräte gefunden, die den Filtern entsprechen</p>
                     {assets.length === 0 && hasPermission('assets.create') && (
-                        <button onClick={openCreateModal} className="btn btn-primary mt-lg">
+                        <button onClick={() => navigate('/assets/new')} className="btn btn-primary mt-lg">
                             <FiPlus />
                             Erstes Gerät erstellen
                         </button>
@@ -411,126 +339,6 @@ function Assets() {
                 </div>
             )}
 
-            {/* Create/Edit Modal */}
-            <Modal
-                isOpen={showModal}
-                onClose={() => setShowModal(false)}
-                title={editingAsset ? 'Gerät bearbeiten' : 'Neues Gerät erstellen'}
-                footer={
-                    <>
-                        <button onClick={() => setShowModal(false)} className="btn btn-secondary">Abbrechen</button>
-                        <button onClick={handleSubmit} className="btn btn-primary">{editingAsset ? 'Speichern' : 'Erstellen'}</button>
-                    </>
-                }
-            >
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label className="form-label">Inventarnummer *</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={formData.inventory_number}
-                            onChange={(e) => setFormData({ ...formData, inventory_number: e.target.value })}
-                            required
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Modell (aus Verwaltung)</label>
-                        <select
-                            className="form-select"
-                            value={formData.model}
-                            onChange={handleModelChange}
-                        >
-                            <option value="">-- Modell wählen --</option>
-                            {deviceModels.map(m => (
-                                <option key={m.id} value={m.model_name}>
-                                    {m.manufacturer} {m.model_name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Hersteller</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={formData.manufacturer}
-                            disabled={true}
-                            placeholder="Wird automatisch ausgefüllt"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Typ</label>
-                        <select
-                            className="form-select"
-                            value={formData.type}
-                            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                            disabled={!!formData.model}
-                        >
-                            <option value="laptop">Laptop</option>
-                            <option value="ipad">iPad/Tablet</option>
-                            <option value="pc">PC / Workstation</option>
-                            <option value="apple_tv">Apple TV / Streaming</option>
-                            <option value="beamer">Beamer / Projektor</option>
-                            <option value="monitor">Monitor / Display</option>
-                            <option value="dokumentenkamera">Dokumentenkamera</option>
-                            <option value="drucker">Drucker</option>
-                            <option value="lautsprecher">Lautsprecher</option>
-                            <option value="mikrofon">Mikrofon</option>
-                            <option value="kamera">Kamera</option>
-                            <option value="sonstiges">Sonstiges</option>
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Seriennummer</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={formData.serial_number}
-                            onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Status</label>
-                        <select
-                            className="form-select"
-                            value={formData.status}
-                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        >
-                            <option value="ok">OK</option>
-                            <option value="defekt">Defekt</option>
-                            <option value="in_reparatur">In Reparatur</option>
-                            <option value="ausgemustert">Ausgemustert</option>
-                        </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Container / Standort</label>
-                        <select
-                            className="form-select"
-                            value={formData.container_id}
-                            onChange={(e) => setFormData({ ...formData, container_id: e.target.value })}
-                        >
-                            <option value="">-- Kein Container / Standort --</option>
-                            <optgroup label="Räume">
-                                {containers.filter(c => c.type === 'raum').map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </optgroup>
-                            <optgroup label="Mobile Container (Wagen, Koffer, etc.)">
-                                {containers.filter(c => c.type !== 'raum').map(c => (
-                                    <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
-                                ))}
-                            </optgroup>
-                        </select>
-                    </div>
-                </form>
-            </Modal>
 
             {/* QR Scanner Modal */}
             <QRScanner
