@@ -26,6 +26,7 @@ const ContainerFormPage = lazy(() => import('./pages/ContainerFormPage'));
 const NetworkFormPage = lazy(() => import('./pages/NetworkFormPage'));
 const AccessoryFormPage = lazy(() => import('./pages/AccessoryFormPage'));
 const LendingFormPage = lazy(() => import('./pages/LendingFormPage'));
+const Forbidden = lazy(() => import('./pages/Forbidden'));
 
 import Sidebar from './components/Sidebar';
 import Breadcrumbs from './components/Breadcrumbs';
@@ -171,6 +172,7 @@ function App() {
                                                     <div className="page">
                                                         <Routes>
                                                             <Route path="/" element={<Dashboard />} />
+                                                            <Route path="/403" element={<Forbidden />} />
                                                             <Route path="/dashboard" element={<Dashboard />} />
                                                             <Route path="/assets" element={<Assets />} />
                                                             <Route path="/assets/new" element={<AssetFormPage />} />

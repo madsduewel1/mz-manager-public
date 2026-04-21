@@ -136,7 +136,11 @@ router.post('/', authMiddleware, requirePermission('assets.create'), async (req,
             container_id,
             purchase_date,
             warranty_until,
-            notes
+            notes,
+            is_reportable,
+            is_lendable,
+            is_network_integrated,
+            mac_address
         } = req.body;
 
         if (!inventory_number || !type) {
@@ -162,9 +166,25 @@ router.post('/', authMiddleware, requirePermission('assets.create'), async (req,
         // Insert asset
         const [result] = await pool.query(
             `INSERT INTO assets 
-       (inventory_number, serial_number, type, model, manufacturer, status, container_id, qr_code, purchase_date, warranty_until, notes) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [inventory_number, serial_number || null, type, model || null, manufacturer || null, status || 'ok', parsedContainerId, qr_code, purchase_date || null, warranty_until || null, notes || null]
+       (inventory_number, serial_number, type, model, manufacturer, status, container_id, qr_code, purchase_date, warranty_until, notes, is_reportable, is_lendable, is_network_integrated, mac_address) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                inventory_number, 
+                serial_number || null, 
+                type, 
+                model || null, 
+                manufacturer || null, 
+                status || 'ok', 
+                parsedContainerId, 
+                qr_code, 
+                purchase_date || null, 
+                warranty_until || null, 
+                notes || null,
+                is_reportable !== undefined ? is_reportable : true,
+                is_lendable !== undefined ? is_lendable : true,
+                is_network_integrated !== undefined ? is_network_integrated : false,
+                mac_address || null
+            ]
         );
 
         // Add to history
@@ -203,7 +223,11 @@ router.put('/:id', authMiddleware, requirePermission('assets.edit'), async (req,
             container_id,
             purchase_date,
             warranty_until,
-            notes
+            notes,
+            is_reportable,
+            is_lendable,
+            is_network_integrated,
+            mac_address
         } = req.body;
 
         // Get old values for history
@@ -220,9 +244,26 @@ router.put('/:id', authMiddleware, requirePermission('assets.edit'), async (req,
         await pool.query(
             `UPDATE assets 
        SET inventory_number = ?, serial_number = ?, type = ?, model = ?, manufacturer = ?, 
-           status = ?, container_id = ?, purchase_date = ?, warranty_until = ?, notes = ?
+           status = ?, container_id = ?, purchase_date = ?, warranty_until = ?, notes = ?,
+           is_reportable = ?, is_lendable = ?, is_network_integrated = ?, mac_address = ?
        WHERE id = ?`,
-            [inventory_number, serial_number || null, type, model || null, manufacturer || null, status, parsedContainerId, purchase_date || null, warranty_until || null, notes || null, id]
+            [
+                inventory_number, 
+                serial_number || null, 
+                type, 
+                model || null, 
+                manufacturer || null, 
+                status, 
+                parsedContainerId, 
+                purchase_date || null, 
+                warranty_until || null, 
+                notes || null,
+                is_reportable !== undefined ? is_reportable : true,
+                is_lendable !== undefined ? is_lendable : true,
+                is_network_integrated !== undefined ? is_network_integrated : false,
+                mac_address || null,
+                id
+            ]
         );
 
         // Add to history if status changed

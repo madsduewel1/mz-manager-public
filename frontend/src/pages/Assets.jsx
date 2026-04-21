@@ -17,6 +17,7 @@ function Assets() {
     const [deviceModels, setDeviceModels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
     const navigate = useNavigate();
     const { confirm } = useConfirmation();
     const { success, error } = useNotification();
@@ -40,24 +41,24 @@ function Assets() {
 
         return matchesContainer && matchesType && matchesSearch;
     }).sort((a, b) => {
-        // 1. Nach Raum sortieren (alphabetisch, ohne Raum ans Ende)
-        const roomA = (a.parent_container_name || '').toLowerCase();
-        const roomB = (b.parent_container_name || '').toLowerCase();
+        // 1. Nach Raum sortieren
+        const roomA = (a?.parent_container_name || '').toLowerCase();
+        const roomB = (b?.parent_container_name || '').toLowerCase();
         if (!roomA && roomB) return 1;
         if (roomA && !roomB) return -1;
         const roomCmp = roomA.localeCompare(roomB, 'de', { numeric: true, sensitivity: 'base' });
         if (roomCmp !== 0) return roomCmp;
 
-        // 2. Nach Container sortieren (alphabetisch, ohne Container ans Ende)
-        const containerA = (a.container_name || '').toLowerCase();
-        const containerB = (b.container_name || '').toLowerCase();
+        // 2. Nach Container sortieren
+        const containerA = (a?.container_name || '').toLowerCase();
+        const containerB = (b?.container_name || '').toLowerCase();
         if (!containerA && containerB) return 1;
         if (containerA && !containerB) return -1;
         const containerCmp = containerA.localeCompare(containerB, 'de', { numeric: true, sensitivity: 'base' });
         if (containerCmp !== 0) return containerCmp;
 
-        // 3. Innerhalb des Containers nach Inventarnummer (alphanumerisch)
-        return a.inventory_number.localeCompare(b.inventory_number, 'de', { numeric: true, sensitivity: 'base' });
+        // 3. Nach Inventarnummer
+        return (a?.inventory_number || '').localeCompare(b?.inventory_number || '', 'de', { numeric: true, sensitivity: 'base' });
     });
 
     // Hilfsfunktion zum Rendern der Gruppen-Header
