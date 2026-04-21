@@ -17,7 +17,16 @@ const ContainerDetail = lazy(() => import('./pages/ContainerDetail'));
 const Lendings = lazy(() => import('./pages/Lendings'));
 const ErrorReports = lazy(() => import('./pages/ErrorReports'));
 const PublicErrorReport = lazy(() => import('./pages/PublicErrorReport'));
-const Admin = lazy(() => import('./pages/Admin'));
+const Admin = lazy(() => import('./pages/admin/AdminLayout'));
+const AdminOverview = lazy(() => import('./pages/admin/AdminOverview'));
+const UsersAdmin = lazy(() => import('./pages/admin/UsersAdmin'));
+const RolesAdmin = lazy(() => import('./pages/admin/RolesAdmin'));
+const ModelsAdmin = lazy(() => import('./pages/admin/ModelsAdmin'));
+const RoomsAdmin = lazy(() => import('./pages/admin/RoomsAdmin'));
+const LogsAdmin = lazy(() => import('./pages/admin/LogsAdmin'));
+const QRCodesAdmin = lazy(() => import('./pages/admin/QRCodesAdmin'));
+const PermissionsAdmin = lazy(() => import('./pages/admin/PermissionsAdmin'));
+const SettingsAdmin = lazy(() => import('./pages/admin/SettingsAdmin'));
 const Network = lazy(() => import('./pages/Network'));
 const Accessories = lazy(() => import('./pages/Accessories'));
 const NotFound = lazy(() => import('./pages/NotFound'));
@@ -192,15 +201,17 @@ function App() {
                                                             <Route path="/accessories" element={<Accessories />} />
                                                             <Route path="/accessories/new" element={<AccessoryFormPage />} />
                                                             <Route path="/accessories/:id/edit" element={<AccessoryFormPage />} />
-                                                            <Route path="/admin" element={<Admin />} />
-                                                            <Route path="/admin/users" element={<Admin defaultTab="users" />} />
-                                                            <Route path="/admin/roles" element={<Admin defaultTab="roles" />} />
-                                                            <Route path="/admin/permissions" element={<Admin defaultTab="permissions" />} />
-                                                            <Route path="/admin/models" element={<Admin defaultTab="models" />} />
-                                                            <Route path="/admin/rooms" element={<Admin defaultTab="rooms" />} />
-                                                            <Route path="/admin/qr-codes" element={<Admin defaultTab="qr-codes" />} />
-                                                            <Route path="/admin/logs" element={<Admin defaultTab="logs" />} />
-                                                            <Route path="/admin/settings" element={<Admin defaultTab="settings" />} />
+                                                            <Route path="/admin" element={<Admin />}>
+                                                                <Route index element={<AdminOverview />} />
+                                                                <Route path="users" element={<UsersAdmin />} />
+                                                                <Route path="roles" element={<RolesAdmin />} />
+                                                                <Route path="permissions" element={<PermissionsAdmin />} />
+                                                                <Route path="models" element={<ModelsAdmin />} />
+                                                                <Route path="rooms" element={<RoomsAdmin />} />
+                                                                <Route path="qr-codes" element={<QRCodesAdmin />} />
+                                                                <Route path="logs" element={<LogsAdmin />} />
+                                                                <Route path="settings" element={<SettingsAdmin />} />
+                                                            </Route>
                                                             <Route path="*" element={<NotFound />} />
                                                         </Routes>
                                                     </div>
