@@ -219,6 +219,13 @@ print_info "Produktions-Build wird erstellt..."
 npm run build
 print_success "Frontend-Build abgeschlossen"
 
+# Dateiberechtigungen für Nginx setzen
+# Nginx läuft als www-data und darf standardmäßig nicht in /root
+print_info "Dateiberechtigungen für Nginx werden gesetzt..."
+chmod o+x /root 2>/dev/null || true
+chmod -R o+rX "$ROOT_DIR"
+print_success "Berechtigungen gesetzt"
+
 # 6. Dienste konfigurieren
 print_step "Services & Webserver konfigurieren"
 
