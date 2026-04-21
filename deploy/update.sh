@@ -279,9 +279,22 @@ print_success "Frontend-Build abgeschlossen"
 # ==============================================================================
 print_step 6 "Dateiberechtigungen für Nginx setzen"
 
-chmod o+x /root 2>/dev/null || true
+# Nginx läuft als www-data und darf standardmäßig nicht in /root oder Home-Verzeichnisse
+print_info "Dateiberechtigungen für Nginx werden optimiert..."
+
+# Sicherstellen, dass jeder Ordner im Pfad zum Projekt für 'others' ausführbar ist (Traversierung)
+CURRENT_PATH=""
+# Wir teilen den Pfad anhand von / auf und bauen ihn Schritt für Schritt wieder zusammen
+IFS='/' read -ra ADDR <<< "$ROOT_DIR"
+for i in "${ADDR[@]}"; do
+    if [ -z "$i" ]; then continue; fi
+    CURRENT_PATH="$CURRENT_PATH/$i"
+    chmod o+x "$CURRENT_PATH" 2>/dev/null || true
+done
+
+# Projekt-Dateien lesbar machen
 chmod -R o+rX "$ROOT_DIR"
-print_success "Berechtigungen aktualisiert"
+print_success "Berechtigungen wurden aktualisiert"
 
 # ==============================================================================
 # STEP 7: Services neustarten

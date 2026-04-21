@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
     FiAlertCircle, FiCheckCircle, FiCamera, FiChevronRight, 
     FiMapPin, FiBox, FiSmartphone, FiArrowLeft, FiImage, 
-    FiMonitor, FiVideo, FiWifi, FiPrinter, FiHelpCircle, FiSearch, FiInfo, FiX
+    FiMonitor, FiVideo, FiWifi, FiPrinter, FiHelpCircle, FiSearch, FiInfo, FiX, FiHome
 } from 'react-icons/fi';
 import { errorsAPI } from '../services/api';
 
@@ -170,11 +170,41 @@ function PublicErrorReport() {
     };
 
     const categories = [
-        { id: 'computer', label: 'Computer / Laptop', icon: <FiMonitor />, color: '#3b82f6' },
-        { id: 'beamer', label: 'Beamer / Display', icon: <FiVideo />, color: '#8b5cf6' },
-        { id: 'network', label: 'Internet / WLAN', icon: <FiWifi />, color: '#10b981' },
-        { id: 'printer', label: 'Drucker', icon: <FiPrinter />, color: '#f59e0b' },
-        { id: 'other', label: 'Sonstiges', icon: <FiHelpCircle />, color: '#6b7280' }
+        { 
+            id: 'computer', 
+            label: 'Computer / Laptop', 
+            description: 'Probleme mit Laptops, Tablets, iPads oder stationären PCs.',
+            icon: <FiMonitor />, 
+            color: '#3b82f6' 
+        },
+        { 
+            id: 'beamer', 
+            label: 'Beamer / Display', 
+            description: 'Kein Bild, Fernbedienung fehlt oder Lautsprecher funktionieren nicht.',
+            icon: <FiVideo />, 
+            color: '#8b5cf6' 
+        },
+        { 
+            id: 'network', 
+            label: 'Internet / WLAN', 
+            description: 'Keine Verbindung zum Netzwerk oder Internet möglich.',
+            icon: <FiWifi />, 
+            color: '#10b981' 
+        },
+        { 
+            id: 'printer', 
+            label: 'Drucker', 
+            description: 'Papierstau, leere Tinte oder Verbindungsprobleme.',
+            icon: <FiPrinter />, 
+            color: '#f59e0b' 
+        },
+        { 
+            id: 'other', 
+            label: 'Sonstiges', 
+            description: 'Alles andere, was nicht in die obigen Kategorien passt.',
+            icon: <FiHelpCircle />, 
+            color: '#6b7280' 
+        }
     ];
 
     const filteredRooms = rooms.filter(r => 
@@ -183,11 +213,11 @@ function PublicErrorReport() {
     );
 
     const stepInfo = {
-        room: { nr: 1, total: 5, title: 'Raum auswählen', help: 'Bitte wähle den Raum aus, in dem das Problem auftritt.' },
-        category: { nr: 2, total: 5, title: 'Kategorie wählen', help: 'Was für ein Gerät ist betroffen?' },
-        assets: { nr: 3, total: 5, title: 'Gerät auswählen', help: 'Wähle das spezifische Gerät aus der Liste aus.' },
-        details: { nr: 4, total: 5, title: 'Problem beschreiben', help: 'Beschreibe kurz, was genau nicht funktioniert.' },
-        summary: { nr: 5, total: 5, title: 'Überprüfen & Senden', help: 'Bitte kontrolliere deine Angaben noch einmal.' }
+        room: { nr: 1, total: 5, title: 'Raum auswählen', help: 'Wo ist das Problem aufgetreten? Wähle zuerst den Raum aus.' },
+        category: { nr: 2, total: 5, title: 'Kategorie wählen', help: 'Was für ein Gerät ist betroffen? Wähle die passende Kategorie.' },
+        assets: { nr: 3, total: 5, title: 'Gerät auswählen', help: 'Welches Gerät genau ist defekt? Wähle es aus der Liste.' },
+        details: { nr: 4, total: 5, title: 'Problem beschreiben', help: 'Was genau funktioniert nicht? Beschreibe den Fehler kurz.' },
+        summary: { nr: 5, total: 5, title: 'Überprüfen & Senden', help: 'Kontrolliere deine Angaben und sende den Bericht ab.' }
     };
 
     const currentStep = stepInfo[step] || { nr: 0, total: 5, title: '', help: '' };
@@ -215,8 +245,8 @@ function PublicErrorReport() {
 
             <div className="report-card">
                 <div className="report-header">
-                    {(step !== 'room' && !qrCode) && (
-                        <button className="back-btn" onClick={() => {
+                    {(step !== 'room' && !qrCode) ? (
+                        <button className="back-btn" title="Zurück" onClick={() => {
                             if (step === 'category') setStep('room');
                             if (step === 'assets') setStep('category');
                             if (step === 'details') {
@@ -229,6 +259,10 @@ function PublicErrorReport() {
                             if (step === 'summary') setStep('details');
                         }}>
                             <FiArrowLeft size={20} />
+                        </button>
+                    ) : (
+                        <button className="back-btn" title="Hauptmenü" onClick={() => navigate('/login')}>
+                            <FiHome size={20} />
                         </button>
                     )}
                     <h2 className="mb-0">{currentStep.title}</h2>
@@ -292,18 +326,21 @@ function PublicErrorReport() {
                             </div>
                         )}
 
-                        <div className="category-grid">
+                        <div className="menu-list">
                             {categories.map(cat => (
                                 <button 
                                     key={cat.id} 
-                                    className="category-card" 
-                                    style={{ borderColor: selectedCategory?.id === cat.id ? cat.color : 'transparent' }}
+                                    className="menu-item" 
                                     onClick={() => handleCategorySelect(cat)}
                                 >
-                                    <div className="cat-icon" style={{ background: `${cat.color}20`, color: cat.color }}>
+                                    <div className="menu-icon" style={{ background: `${cat.color}15`, color: cat.color }}>
                                         {cat.icon}
                                     </div>
-                                    <span className="cat-label">{cat.label}</span>
+                                    <div className="menu-content">
+                                        <div className="menu-title">{cat.label}</div>
+                                        <div className="menu-description">{cat.description}</div>
+                                    </div>
+                                    <FiChevronRight className="menu-arrow" />
                                 </button>
                             ))}
                         </div>
@@ -341,15 +378,20 @@ function PublicErrorReport() {
                 {step === 'details' && (
                     <div className="fade-in">
                         <div className="form-group mb-lg">
-                            <label className="form-label">Beschreibung *</label>
+                            <label className="form-label" style={{ fontWeight: 700, fontSize: '15px' }}>
+                                Was ist passiert? <span style={{ color: 'var(--color-error)' }}>*</span>
+                            </label>
                             <textarea 
                                 className="form-textarea"
                                 rows="5"
-                                placeholder="Beschreibe kurz, was genau nicht funktioniert..."
+                                placeholder="z.B. Der Beamer lässt sich nicht einschalten oder das Display flackert..."
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 required
                             ></textarea>
+                            <small className="text-muted" style={{ display: 'block', marginTop: '8px' }}>
+                                Bitte beschreibe den Fehler so genau wie möglich.
+                            </small>
                         </div>
 
                         <div className="photo-upload-container mb-xl">
@@ -364,7 +406,7 @@ function PublicErrorReport() {
                             ) : (
                                 <button className="photo-btn" onClick={() => fileInputRef.current?.click()}>
                                     <FiCamera size={24} />
-                                    <span>Bild hinzufügen (optional)</span>
+                                    <span>Bild vom Defekt machen (optional)</span>
                                 </button>
                             )}
                         </div>
@@ -374,7 +416,7 @@ function PublicErrorReport() {
                             disabled={!description.trim()}
                             onClick={() => setStep('summary')}
                         >
-                            Weiter zur Zusammenfassung
+                            Zusammenfassung ansehen
                         </button>
                     </div>
                 )}
@@ -382,54 +424,68 @@ function PublicErrorReport() {
                 {/* STEP 5: SUMMARY */}
                 {step === 'summary' && (
                     <div className="fade-in">
-                        <div className="summary-list mb-2xl">
-                            <div className="summary-item">
-                                <label>Ort / Gerät:</label>
-                                <span>
-                                    {selectedAsset ? selectedAsset.inventory_number : (
-                                        qrCode ? (scannedInfo?.data.inventory_number || scannedInfo?.data.name) : selectedRoom?.name
+                        <div className="summary-card mb-xl">
+                            <div className="summary-section">
+                                <div className="summary-label">Betroffenes Gerät / Ort</div>
+                                <div className="summary-value">
+                                    {selectedAsset ? (
+                                        <><FiMonitor className="mr-sm" /> {selectedAsset.inventory_number}</>
+                                    ) : (
+                                        qrCode ? (
+                                            <><FiSmartphone className="mr-sm" /> {scannedInfo?.data.inventory_number || scannedInfo?.data.name}</>
+                                        ) : (
+                                            <><FiMapPin className="mr-sm" /> {selectedRoom?.name}</>
+                                        )
                                     )}
-                                </span>
+                                </div>
                             </div>
-                            <div className="summary-item">
-                                <label>Kategorie:</label>
-                                <span>{selectedCategory?.label}</span>
+                            
+                            <div className="summary-section">
+                                <div className="summary-label">Kategorie</div>
+                                <div className="summary-value">
+                                    <span style={{ color: selectedCategory?.color }}>{selectedCategory?.label}</span>
+                                </div>
                             </div>
-                            <div className="summary-item">
-                                <label>Beschreibung:</label>
-                                <p>{description}</p>
+
+                            <div className="summary-section">
+                                <div className="summary-label">Problembeschreibung</div>
+                                <div className="summary-value-text">{description}</div>
                             </div>
+
                             {photo && (
-                                <div className="summary-item">
-                                    <label>Foto:</label>
-                                    <div className="summary-photo">
-                                        <FiImage size={18} /> Bild angehängt
+                                <div className="summary-section" style={{ borderBottom: 'none' }}>
+                                    <div className="summary-label">Foto</div>
+                                    <div className="summary-photo-mini">
+                                        <FiImage size={16} /> Foto angehängt
                                     </div>
                                 </div>
                             )}
                         </div>
 
                         <div className="form-group mb-xl">
-                            <label className="form-label">Dein Name (optional)</label>
+                            <label className="form-label" style={{ fontWeight: 700 }}>Dein Name (optional)</label>
                             <input 
                                 type="text" 
                                 className="form-input" 
-                                placeholder="Max Mustermann"
+                                placeholder="z.B. Max Mustermann"
                                 value={reporterName}
                                 onChange={(e) => setReporterName(e.target.value)}
                             />
                         </div>
 
-                        <button 
-                            className="btn btn-primary btn-lg w-full mb-md" 
-                            disabled={submitting}
-                            onClick={handleSubmit}
-                        >
-                            {submitting ? 'Wird gesendet...' : 'Fehler jetzt melden'}
-                        </button>
-                        <button className="btn btn-secondary w-full" onClick={() => setStep('details')}>
-                            Zurück zur Bearbeitung
-                        </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <button 
+                                className="btn btn-primary btn-lg w-full" 
+                                disabled={submitting}
+                                onClick={handleSubmit}
+                                style={{ height: '56px', fontSize: '18px' }}
+                            >
+                                {submitting ? 'Bericht wird gesendet...' : 'Bericht jetzt abschicken'}
+                            </button>
+                            <button className="btn btn-secondary w-full" onClick={() => setStep('details')}>
+                                Angabe korrigieren
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -609,45 +665,73 @@ function PublicErrorReport() {
                     color: var(--color-text-tertiary);
                 }
 
-                .category-grid {
-                    display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 16px;
-                }
-
-                .category-card {
-                    background: var(--color-bg-light);
-                    border: 2px solid transparent;
-                    border-radius: 20px;
-                    padding: 24px 16px;
+                .menu-list {
                     display: flex;
                     flex-direction: column;
-                    align-items: center;
-                    gap: 12px;
-                    cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    gap: var(--space-md);
                 }
 
-                .category-card:hover {
-                    transform: translateY(-4px);
+                .menu-item {
+                    display: flex;
+                    align-items: center;
+                    padding: 18px;
+                    background: var(--color-bg-light);
+                    border: 1px solid var(--color-border);
+                    border-radius: 20px;
+                    cursor: pointer;
+                    text-align: left;
+                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    gap: var(--space-lg);
+                    width: 100%;
+                }
+
+                .menu-item:hover {
+                    border-color: var(--color-primary);
+                    transform: translateY(-2px);
+                    box-shadow: var(--shadow-lg);
                     background: var(--color-bg-lighter);
                 }
 
-                .cat-icon {
-                    width: 56px;
-                    height: 56px;
-                    border-radius: 16px;
+                .menu-icon {
+                    width: 52px;
+                    height: 52px;
+                    border-radius: 14px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 28px;
+                    font-size: 24px;
+                    flex-shrink: 0;
                 }
 
-                .cat-label {
+                .menu-content {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+
+                .menu-title {
                     font-weight: 700;
-                    font-size: 14px;
+                    font-size: 16px;
                     color: var(--color-text-primary);
-                    text-align: center;
+                }
+
+                .menu-description {
+                    font-size: 13px;
+                    color: var(--color-text-tertiary);
+                    line-height: 1.4;
+                }
+
+                .menu-arrow {
+                    color: var(--color-text-tertiary);
+                    opacity: 0.5;
+                }
+
+                .menu-item:hover .menu-arrow {
+                    color: var(--color-primary);
+                    opacity: 1;
+                    transform: translateX(4px);
+                    transition: all 0.2s;
                 }
 
                 .other-btn {
@@ -717,38 +801,82 @@ function PublicErrorReport() {
                     cursor: pointer;
                 }
 
-                .summary-list {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
+                .summary-card {
+                    background: var(--color-bg-dark);
+                    border: 1px solid var(--color-border);
+                    border-radius: 20px;
+                    overflow: hidden;
                 }
 
-                .summary-item {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                    padding-bottom: 12px;
+                .summary-section {
+                    padding: 16px;
                     border-bottom: 1px solid var(--color-border);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
                 }
 
-                .summary-item:last-child {
-                    border-bottom: none;
-                }
-
-                .summary-item label {
+                .summary-label {
                     font-size: 11px;
                     font-weight: 800;
                     text-transform: uppercase;
                     color: var(--color-text-tertiary);
-                    letter-spacing: 0.5px;
+                    letter-spacing: 0.05em;
                 }
 
-                .summary-item span, .summary-item p {
+                .summary-value {
                     font-size: 16px;
-                    font-weight: 600;
+                    font-weight: 700;
                     color: var(--color-text-primary);
-                    margin: 0;
+                    display: flex;
+                    align-items: center;
                 }
+
+                .summary-value-text {
+                    font-size: 14px;
+                    line-height: 1.5;
+                    color: var(--color-text-primary);
+                    white-space: pre-wrap;
+                }
+
+                .summary-photo-mini {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 13px;
+                    color: var(--color-primary-light);
+                    font-weight: 600;
+                }
+
+                .progress-container {
+                    width: 100%;
+                    max-width: 500px;
+                    background: var(--color-bg-medium);
+                    height: 12px;
+                    border-radius: 6px;
+                    margin-bottom: var(--space-lg);
+                    position: relative;
+                    overflow: hidden;
+                    border: 1px solid var(--color-border);
+                }
+
+                .progress-bar {
+                    height: 100%;
+                    background: var(--color-primary);
+                    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+
+                .progress-text {
+                    display: none;
+                }
+
+                .back-btn:hover {
+                    background: var(--color-primary);
+                    color: white;
+                    transform: scale(1.05);
+                }
+
+                .mr-sm { margin-right: 8px; }
 
                 .scanned-info {
                     background: var(--color-bg-dark);
@@ -801,18 +929,13 @@ function PublicErrorReport() {
                     100% { transform: rotate(360deg); }
                 }
 
-                /* Desktop Adaptions */
-                @media (min-width: 1200px) {
+                @media (max-width: 480px) {
                     .report-card {
-                        max-width: 800px;
+                        padding: var(--space-lg);
+                        border-radius: 16px;
                     }
-                    .tile-grid {
-                        display: grid;
-                        grid-template-columns: repeat(2, 1fr);
-                        max-height: none;
-                    }
-                    .category-grid {
-                        grid-template-columns: repeat(3, 1fr);
+                    .menu-item {
+                        padding: 14px;
                     }
                 }
             `}</style>

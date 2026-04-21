@@ -220,11 +220,21 @@ npm run build
 print_success "Frontend-Build abgeschlossen"
 
 # Dateiberechtigungen für Nginx setzen
-# Nginx läuft als www-data und darf standardmäßig nicht in /root
-print_info "Dateiberechtigungen für Nginx werden gesetzt..."
-chmod o+x /root 2>/dev/null || true
-chmod -R o+rX "$ROOT_DIR"
-print_success "Berechtigungen gesetzt"
+# Nginx läuft als www-data und darf standardmäßig nicht in /root oder Home-Verzeichnisse
+print_info "Dateiberechtigungen für Nginx werden optimiert..."
+
+# Sicherstellen, dass jeder Ordner im Pfad zum Projekt für 'others' ausführbar ist (Traversierung)
+CURRENT_PATH=""
+IFS='/' read -ra ADDR <<< "$PROJECT_PATH"
+for i in "${ADDR[@]}"; do
+    if [ -z "$i" ]; then continue; fi
+    CURRENT_PATH="$CURRENT_PATH/$i"
+    chmod o+x "$CURRENT_PATH" 2>/dev/null || true
+done
+
+# Projekt-Dateien lesbar machen
+chmod -R o+rX "$PROJECT_PATH"
+print_success "Berechtigungen für den Webserver ($SYS_URL) gesetzt"
 
 # 6. Dienste konfigurieren
 print_step "Services & Webserver konfigurieren"

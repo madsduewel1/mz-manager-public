@@ -20,6 +20,7 @@ const PublicErrorReport = lazy(() => import('./pages/PublicErrorReport'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Network = lazy(() => import('./pages/Network'));
 const Accessories = lazy(() => import('./pages/Accessories'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 import Sidebar from './components/Sidebar';
 import Breadcrumbs from './components/Breadcrumbs';
@@ -183,7 +184,7 @@ function App() {
                                                             <Route path="/admin/qr-codes" element={<Admin defaultTab="qr-codes" />} />
                                                             <Route path="/admin/logs" element={<Admin defaultTab="logs" />} />
                                                             <Route path="/admin/settings" element={<Admin defaultTab="settings" />} />
-                                                            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                                                            <Route path="*" element={<NotFound />} />
                                                         </Routes>
                                                     </div>
                                                 </div>
