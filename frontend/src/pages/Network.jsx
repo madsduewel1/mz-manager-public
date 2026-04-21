@@ -311,7 +311,7 @@ function Network() {
 
             if (vlanId !== lastVlanId) {
                 rows.push(
-                    <tr key={`vlan-group-${vlanId}`} className="group-header" style={{ background: '#e2e8f0', borderBottom: '2px solid var(--color-border)' }}>
+                    <tr key={`vlan-group-${vlanId}`} className="group-header" style={{ background: '#cbd5e1', borderBottom: '2px solid var(--color-border)' }}>
                         <td colSpan="8" style={{ padding: '10px 16px', fontWeight: 700, color: '#475569', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             <FiActivity style={{ marginRight: '8px', verticalAlign: 'middle', color: 'var(--color-primary)' }} />
                             {vlanLabel}
