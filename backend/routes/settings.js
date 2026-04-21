@@ -47,7 +47,7 @@ router.get('/', async (req, res) => {
 // Update settings
 router.post('/', authMiddleware, requirePermission('users.manage'), async (req, res) => {
     try {
-        const { org_name, base_url, module_network_enabled } = req.body;
+        const { org_name, base_url, module_network_enabled, module_accessories_enabled } = req.body;
 
         if (org_name !== undefined) {
             await pool.query(
@@ -67,6 +67,13 @@ router.post('/', authMiddleware, requirePermission('users.manage'), async (req, 
             await pool.query(
                 'INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
                 ['module_network_enabled', module_network_enabled, module_network_enabled]
+            );
+        }
+
+        if (module_accessories_enabled !== undefined) {
+            await pool.query(
+                'INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
+                ['module_accessories_enabled', module_accessories_enabled, module_accessories_enabled]
             );
         }
 
