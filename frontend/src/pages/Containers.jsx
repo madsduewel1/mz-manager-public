@@ -124,8 +124,98 @@ function Containers() {
 
         return matchesType && matchesRoom && matchesSearch;
     }).sort((a, b) => {
-        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+        // 1. Nach Raum sortieren (alphabetisch, ohne Raum ans Ende)
+        const roomA = (a.parent_name || a.location || '').toLowerCase();
+        const roomB = (b.parent_name || b.location || '').toLowerCase();
+        if (!roomA && roomB) return 1;
+        if (roomA && !roomB) return -1;
+        const roomCmp = roomA.localeCompare(roomB, 'de', { numeric: true, sensitivity: 'base' });
+        if (roomCmp !== 0) return roomCmp;
+        // 2. Innerhalb des Raums nach Name (alphanumerisch)
+        return a.name.localeCompare(b.name, 'de', { numeric: true, sensitivity: 'base' });
     });
+
+    const renderContainersWithGroups = () => {
+        const rows = [];
+        let lastGroup = null;
+
+        filteredContainers.forEach((container) => {
+            const groupName = container.parent_name || container.location || 'Nicht zugewiesen';
+
+            if (groupName !== lastGroup) {
+                rows.push(
+                    <tr key={`group-${groupName}`} className="group-header" style={{ background: '#f1f5f9', borderBottom: '2px solid var(--color-border)' }}>
+                        <td colSpan="5" style={{ padding: '8px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <FiBox style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                            Standort: {groupName}
+                        </td>
+                    </tr>
+                );
+                lastGroup = groupName;
+            }
+
+            rows.push(
+                <tr key={container.id}>
+                    <td data-label="Name">
+                        <Link to={`/containers/${container.name}`} style={{ fontWeight: 600 }}>
+                            {container.name}
+                        </Link>
+                    </td>
+                    <td data-label="Typ">
+                        <span className="badge badge-info">{container.type}</span>
+                    </td>
+                    <td data-label="Standort">
+                        {container.parent_name ? (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>Raum</span>
+                                {container.parent_name}
+                            </span>
+                        ) : (
+                            container.location || <span className="text-muted">Nicht zugewiesen</span>
+                        )}
+                    </td>
+                    <td data-label="Geräte">
+                        <span className="badge badge-secondary">{container.asset_count || 0}</span>
+                    </td>
+                    <td data-label="Aktionen" style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <Link
+                                to={`/containers/${container.name}`}
+                                className="btn btn-sm btn-secondary"
+                                title="Details"
+                            >
+                                Details
+                            </Link>
+                            {hasPermission('containers.edit', 'containers.delete') && (
+                                <>
+                                    {hasPermission('containers.edit') && (
+                                        <button
+                                            onClick={() => openEditModal(container)}
+                                            className="btn btn-sm btn-secondary"
+                                            title="Bearbeiten"
+                                        >
+                                            <FiEdit />
+                                        </button>
+                                    )}
+                                    {hasPermission('containers.delete') && (
+                                        <button
+                                            onClick={() => handleDelete(container.id)}
+                                            className="btn btn-sm btn-danger"
+                                            title="Löschen"
+                                        >
+                                            <FiTrash2 />
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </td>
+                </tr>
+            );
+        });
+
+        return rows;
+    };
 
     if (loading) {
         return <div className="container"><div className="loading">Lade Container...</div></div>;
@@ -224,64 +314,7 @@ function Containers() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredContainers.map((container) => (
-                                <tr key={container.id}>
-                                    <td data-label="Name">
-                                        <Link to={`/containers/${container.name}`} style={{ fontWeight: 600 }}>
-                                            {container.name}
-                                        </Link>
-                                    </td>
-                                    <td data-label="Typ">
-                                        <span className="badge badge-info">{container.type}</span>
-                                    </td>
-                                    <td data-label="Standort">
-                                        {container.parent_name ? (
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>Raum</span>
-                                                {container.parent_name}
-                                            </span>
-                                        ) : (
-                                            container.location || <span className="text-muted">Nicht zugewiesen</span>
-                                        )}
-                                    </td>
-                                    <td data-label="Geräte">
-                                        <span className="badge badge-secondary">{container.asset_count || 0}</span>
-                                    </td>
-                                    <td data-label="Aktionen" style={{ textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                            <Link
-                                                to={`/containers/${container.name}`}
-                                                className="btn btn-sm btn-secondary"
-                                                title="Details"
-                                            >
-                                                Details
-                                            </Link>
-                                            {hasPermission('containers.edit', 'containers.delete') && (
-                                                <>
-                                                    {hasPermission('containers.edit') && (
-                                                        <button
-                                                            onClick={() => openEditModal(container)}
-                                                            className="btn btn-sm btn-secondary"
-                                                            title="Bearbeiten"
-                                                        >
-                                                            <FiEdit />
-                                                        </button>
-                                                    )}
-                                                    {hasPermission('containers.delete') && (
-                                                        <button
-                                                            onClick={() => handleDelete(container.id)}
-                                                            className="btn btn-sm btn-danger"
-                                                            title="Löschen"
-                                                        >
-                                                            <FiTrash2 />
-                                                        </button>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {renderContainersWithGroups()}
                         </tbody>
                     </table>
                 </div>

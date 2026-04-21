@@ -54,8 +54,113 @@ function Assets() {
 
         return matchesContainer && matchesType && matchesSearch;
     }).sort((a, b) => {
-        return a.inventory_number.localeCompare(b.inventory_number, undefined, { numeric: true, sensitivity: 'base' });
+        // 1. Nach Raum sortieren (alphabetisch, ohne Raum ans Ende)
+        const roomA = (a.parent_container_name || '').toLowerCase();
+        const roomB = (b.parent_container_name || '').toLowerCase();
+        if (!roomA && roomB) return 1;
+        if (roomA && !roomB) return -1;
+        const roomCmp = roomA.localeCompare(roomB, 'de', { numeric: true, sensitivity: 'base' });
+        if (roomCmp !== 0) return roomCmp;
+
+        // 2. Nach Container sortieren (alphabetisch, ohne Container ans Ende)
+        const containerA = (a.container_name || '').toLowerCase();
+        const containerB = (b.container_name || '').toLowerCase();
+        if (!containerA && containerB) return 1;
+        if (containerA && !containerB) return -1;
+        const containerCmp = containerA.localeCompare(containerB, 'de', { numeric: true, sensitivity: 'base' });
+        if (containerCmp !== 0) return containerCmp;
+
+        // 3. Innerhalb des Containers nach Inventarnummer (alphanumerisch)
+        return a.inventory_number.localeCompare(b.inventory_number, 'de', { numeric: true, sensitivity: 'base' });
     });
+
+    // Hilfsfunktion zum Rendern der Gruppen-Header
+    const renderAssetsWithGroups = () => {
+        const rows = [];
+        let lastGroup = null;
+
+        filteredAssets.forEach((asset) => {
+            // Gruppierung nach Standort (Raum + Container)
+            const groupName = asset.container_name 
+                ? (asset.parent_container_name ? `${asset.parent_container_name} > ${asset.container_name}` : asset.container_name)
+                : 'Nicht zugewiesen';
+
+            if (groupName !== lastGroup) {
+                rows.push(
+                    <tr key={`group-${groupName}`} className="group-header" style={{ background: '#f1f5f9', borderBottom: '2px solid var(--color-border)' }}>
+                        <td colSpan="6" style={{ padding: '8px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <FiPackage style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                            {groupName}
+                        </td>
+                    </tr>
+                );
+                lastGroup = groupName;
+            }
+
+            rows.push(
+                <tr key={asset.id}>
+                    <td data-label="Inventarnummer">
+                        <Link to={`/assets/${asset.inventory_number}`} style={{ fontWeight: 600 }}>
+                            {asset.inventory_number}
+                        </Link>
+                    </td>
+                    <td data-label="Typ">
+                        <span className="badge badge-info">{asset.type}</span>
+                    </td>
+                    <td data-label="Modell / Hersteller">
+                        <div className="text-small">
+                            {asset.model || 'N/A'}<br />
+                            <span className="text-muted">{asset.manufacturer || ''}</span>
+                        </div>
+                    </td>
+                    <td data-label="Status">
+                        <StatusBadge status={asset.status} />
+                    </td>
+                    <td data-label="Standort">
+                        <div className="text-xs">
+                            {asset.parent_container_name && <div className="text-muted">{asset.parent_container_name}</div>}
+                            {asset.container_name || <span className="text-muted">Nicht zugewiesen</span>}
+                        </div>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <Link
+                                to={`/assets/${asset.inventory_number}`}
+                                className="btn btn-sm btn-secondary"
+                                title="Details"
+                            >
+                                Details
+                            </Link>
+                            {hasPermission('assets.edit', 'assets.delete') && (
+                                <>
+                                    {hasPermission('assets.edit') && (
+                                        <button
+                                            onClick={() => openEditModal(asset)}
+                                            className="btn btn-sm btn-secondary"
+                                            title="Bearbeiten"
+                                        >
+                                            <FiEdit />
+                                        </button>
+                                    )}
+                                    {hasPermission('assets.delete') && (
+                                        <button
+                                            onClick={() => handleDelete(asset.id)}
+                                            className="btn btn-sm btn-danger"
+                                            title="Löschen"
+                                        >
+                                            <FiTrash2 />
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </td>
+                </tr>
+            );
+        });
+
+        return rows;
+    };
 
     const loadAssets = async () => {
         try {
@@ -302,63 +407,7 @@ function Assets() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredAssets.map((asset) => (
-                                <tr key={asset.id}>
-                                    <td data-label="Inventarnummer">
-                                        <Link to={`/assets/${asset.inventory_number}`} style={{ fontWeight: 600 }}>
-                                            {asset.inventory_number}
-                                        </Link>
-                                    </td>
-                                    <td data-label="Typ">
-                                        <span className="badge badge-info">{asset.type}</span>
-                                    </td>
-                                    <td data-label="Modell / Hersteller">
-                                        <div className="text-small">
-                                            {asset.model || 'N/A'}<br />
-                                            <span className="text-muted">{asset.manufacturer || ''}</span>
-                                        </div>
-                                    </td>
-                                    <td data-label="Status">
-                                        <StatusBadge status={asset.status} />
-                                    </td>
-                                    <td data-label="Standort">
-                                        {asset.container_name || <span className="text-muted">Nicht zugewiesen</span>}
-                                    </td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                            <Link
-                                                to={`/assets/${asset.inventory_number}`}
-                                                className="btn btn-sm btn-secondary"
-                                                title="Details"
-                                            >
-                                                Details
-                                            </Link>
-                                            {hasPermission('assets.edit', 'assets.delete') && (
-                                                <>
-                                                    {hasPermission('assets.edit') && (
-                                                        <button
-                                                            onClick={() => openEditModal(asset)}
-                                                            className="btn btn-sm btn-secondary"
-                                                            title="Bearbeiten"
-                                                        >
-                                                            <FiEdit />
-                                                        </button>
-                                                    )}
-                                                    {hasPermission('assets.delete') && (
-                                                        <button
-                                                            onClick={() => handleDelete(asset.id)}
-                                                            className="btn btn-sm btn-danger"
-                                                            title="Löschen"
-                                                        >
-                                                            <FiTrash2 />
-                                                        </button>
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {renderAssetsWithGroups()}
                         </tbody>
                     </table>
                 </div>

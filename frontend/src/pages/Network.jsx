@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
     FiRepeat, FiPlus, FiTrash2, FiEdit2, FiSearch,
-    FiFilter, FiDownload, FiAlertCircle,
+    FiFilter, FiDownload, FiAlertCircle, FiActivity,
     FiServer, FiMonitor, FiPrinter, FiCpu, FiX, FiWifi
 } from 'react-icons/fi';
 import { networkAPI } from '../services/api';
@@ -202,7 +202,7 @@ function Network() {
         try {
             const [devRes, vlanRes] = await Promise.all([networkAPI.getDevices(), networkAPI.getVlans()]);
             setDevices(devRes.data);
-            setVlans(vlanRes.data);
+            setVlans([...vlanRes.data].sort((a, b) => a.vlan_id - b.vlan_id));
         } catch (err) {
             notifyError(err.response?.data?.error || 'Fehler beim Laden der Netzwerkdaten');
         } finally {
@@ -283,7 +283,89 @@ function Network() {
             (vlanFilter === 'none' && !d.network_vlan_id) ||
             d.network_vlan_id?.toString() === vlanFilter;
         return matchesSearch && matchesVlan;
+    }).sort((a, b) => {
+        // 1. Nach VLAN-ID sortieren (numerisch, ohne VLAN ans Ende)
+        const vlanA = a.vlan_id ?? Infinity;
+        const vlanB = b.vlan_id ?? Infinity;
+        if (vlanA !== vlanB) return vlanA - vlanB;
+        // 2. Nach IP-Adresse sortieren (numerisch)
+        const ipToNum = (ip) => {
+            if (!ip) return Infinity;
+            const parts = ip.split('.');
+            if (parts.length !== 4) return Infinity;
+            return parts.reduce((acc, octet) => acc * 256 + (parseInt(octet, 10) || 0), 0);
+        };
+        const ipCmp = ipToNum(a.ip_address) - ipToNum(b.ip_address);
+        if (ipCmp !== 0) return ipCmp;
+        // 3. Nach Inventarnummer (alphanumerisch)
+        return a.inventory_number.localeCompare(b.inventory_number, 'de', { numeric: true, sensitivity: 'base' });
     });
+
+    const renderDevicesWithGroups = () => {
+        const rows = [];
+        let lastVlanId = null;
+
+        filteredDevices.forEach((device) => {
+            const vlanId = device.vlan_id || 'none';
+            const vlanLabel = device.vlan_id ? `VLAN ${device.vlan_id}${device.vlan_name ? ` - ${device.vlan_name}` : ''}` : 'Kein VLAN / Nicht zugewiesen';
+
+            if (vlanId !== lastVlanId) {
+                rows.push(
+                    <tr key={`vlan-group-${vlanId}`} className="group-header" style={{ background: '#f8fafc', borderBottom: '2px solid var(--color-border)' }}>
+                        <td colSpan="8" style={{ padding: '10px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <FiActivity style={{ marginRight: '8px', verticalAlign: 'middle', color: 'var(--color-primary)' }} />
+                            {vlanLabel}
+                        </td>
+                    </tr>
+                );
+                lastVlanId = vlanId;
+            }
+
+            rows.push(
+                <tr key={device.id}>
+                    <td>
+                        <div className="flex items-center gap-sm">
+                            <span style={{ color: 'var(--color-primary)' }}>{getRoleIcon(device.network_role)}</span>
+                            <div>
+                                <div className="font-semibold">{device.model || device.type}</div>
+                                <div className="text-xs text-muted">{device.network_role}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><code>{device.inventory_number}</code></td>
+                    <td>
+                        {device.vlan_name
+                            ? <span className="badge badge-outline">VLAN {device.vlan_id}: {device.vlan_name}</span>
+                            : <span className="text-muted italic">Nicht zugewiesen</span>
+                        }
+                    </td>
+                    <td>
+                        <span className="font-mono">{device.ip_address || '-'}</span>
+                        {device.dhcp_enabled && <span className="text-xs text-info" style={{ marginLeft: '4px' }}>DHCP</span>}
+                    </td>
+                    <td><span className="font-mono text-small">{device.mac_address || '-'}</span></td>
+                    <td>
+                        <div className="text-xs">
+                            <div>{device.location || '-'}</div>
+                            {device.switch_name && <div className="text-muted">{device.switch_name} / {device.port_number}</div>}
+                        </div>
+                    </td>
+                    <td>
+                        <span className={`badge badge-${device.status?.toLowerCase() === 'ok' ? 'success' : 'warning'}`}>
+                            {device.status}
+                        </span>
+                    </td>
+                    <td>
+                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openAssignModal(device)}>
+                            <FiEdit2 />
+                        </button>
+                    </td>
+                </tr>
+            );
+        });
+
+        return rows;
+    };
 
     const exportCSV = () => {
         const headers = ['Gerät', 'Inventarnummer', 'VLAN', 'Subnetz', 'IP-Adresse', 'MAC-Adresse', 'Modus', 'Standort', 'Rolle'];
@@ -454,48 +536,9 @@ function Network() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredDevices.map(device => (
-                                        <tr key={device.id}>
-                                            <td>
-                                                <div className="flex items-center gap-sm">
-                                                    <span style={{ color: 'var(--color-primary)' }}>{getRoleIcon(device.network_role)}</span>
-                                                    <div>
-                                                        <div className="font-semibold">{device.model || device.type}</div>
-                                                        <div className="text-xs text-muted">{device.network_role}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td><code>{device.inventory_number}</code></td>
-                                            <td>
-                                                {device.vlan_name
-                                                    ? <span className="badge badge-outline">VLAN {device.vlan_id}: {device.vlan_name}</span>
-                                                    : <span className="text-muted italic">Nicht zugewiesen</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                <span className="font-mono">{device.ip_address || '-'}</span>
-                                                {device.dhcp_enabled && <span className="text-xs text-info" style={{ marginLeft: '4px' }}>DHCP</span>}
-                                            </td>
-                                            <td><span className="font-mono text-small">{device.mac_address || '-'}</span></td>
-                                            <td>
-                                                <div className="text-xs">
-                                                    <div>{device.location || '-'}</div>
-                                                    {device.switch_name && <div className="text-muted">{device.switch_name} / {device.port_number}</div>}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className={`badge badge-${device.status?.toLowerCase() === 'ok' ? 'success' : 'warning'}`}>
-                                                    {device.status}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openAssignModal(device)}>
-                                                    <FiEdit2 />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {filteredDevices.length === 0 && (
+                                    {filteredDevices.length > 0 ? (
+                                        renderDevicesWithGroups()
+                                    ) : (
                                         <tr><td colSpan="8" className="text-center py-xl text-muted">Keine Geräte gefunden</td></tr>
                                     )}
                                 </tbody>

@@ -11,9 +11,10 @@ router.get('/', authMiddleware, requirePermission('assets.view'), async (req, re
         const { status, type, container_id } = req.query;
 
         let query = `
-      SELECT a.*, c.name as container_name 
+      SELECT a.*, c.name as container_name, pc.name as parent_container_name 
       FROM assets a 
       LEFT JOIN containers c ON a.container_id = c.id
+      LEFT JOIN containers pc ON c.parent_container_id = pc.id
       WHERE 1=1
     `;
         const params = [];

@@ -312,6 +312,21 @@ function Accessories() {
         const matchesStatus = statusFilter === 'all' || i.status === statusFilter;
 
         return matchesSearch && matchesCategory && matchesStatus;
+    }).sort((a, b) => {
+        // 1. Nach Standort sortieren
+        const locA = (a.location || '').toLowerCase();
+        const locB = (b.location || '').toLowerCase();
+        const locCmp = locA.localeCompare(locB, 'de', { numeric: true, sensitivity: 'base' });
+        if (locCmp !== 0) return locCmp;
+
+        // 2. Nach Kategorie sortieren
+        const catA = (a.category || '').toLowerCase();
+        const catB = (b.category || '').toLowerCase();
+        const catCmp = catA.localeCompare(catB, 'de', { numeric: true, sensitivity: 'base' });
+        if (catCmp !== 0) return catCmp;
+
+        // 3. Nach Name sortieren
+        return a.name.localeCompare(b.name, 'de', { numeric: true, sensitivity: 'base' });
     });
 
     const exportCSV = () => {
