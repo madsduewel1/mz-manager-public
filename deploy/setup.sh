@@ -77,7 +77,7 @@ fi
 # --- Variablen initialisieren ---
 ORG_NAME="MZ-MANAGER"
 SYS_URL="localhost"
-DB_HOST="localhost"
+DB_HOST="127.0.0.1"
 DB_USER="mz_user"
 DB_PASS=""
 DB_NAME="mz_manager"
@@ -141,7 +141,7 @@ SYS_URL=${input_url:-$SYS_URL}
 
 # Database
 echo -e "\n${DB} ${BOLD}Datenbank-Konfiguration:${NC}"
-read -p "   Host [localhost]: " input_db_host
+read -p "   Host [127.0.0.1]: " input_db_host
 DB_HOST=${input_db_host:-$DB_HOST}
 read -p "   Benutzer [mz_user]: " input_db_user
 DB_USER=${input_db_user:-$DB_USER}
