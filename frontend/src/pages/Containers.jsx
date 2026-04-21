@@ -144,8 +144,8 @@ function Containers() {
 
             if (groupName !== lastGroup) {
                 rows.push(
-                    <tr key={`group-${groupName}`} className="group-header" style={{ background: '#f1f5f9', borderBottom: '2px solid var(--color-border)' }}>
-                        <td colSpan="5" style={{ padding: '8px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <tr key={`group-${groupName}`} className="group-header" style={{ background: '#e2e8f0', borderBottom: '2px solid var(--color-border)' }}>
+                        <td colSpan="5" style={{ padding: '8px 16px', fontWeight: 700, color: '#475569', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             <FiBox style={{ marginRight: '8px', verticalAlign: 'middle' }} />
                             Standort: {groupName}
                         </td>

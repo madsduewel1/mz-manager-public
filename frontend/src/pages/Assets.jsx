@@ -80,15 +80,13 @@ function Assets() {
         let lastGroup = null;
 
         filteredAssets.forEach((asset) => {
-            // Gruppierung nach Standort (Raum + Container)
-            const groupName = asset.container_name 
-                ? (asset.parent_container_name ? `${asset.parent_container_name} > ${asset.container_name}` : asset.container_name)
-                : 'Nicht zugewiesen';
+            // Gruppierung nur nach Container-Name
+            const groupName = asset.container_name || 'Nicht zugewiesen';
 
             if (groupName !== lastGroup) {
                 rows.push(
-                    <tr key={`group-${groupName}`} className="group-header" style={{ background: '#f1f5f9', borderBottom: '2px solid var(--color-border)' }}>
-                        <td colSpan="6" style={{ padding: '8px 16px', fontWeight: 700, color: 'var(--color-text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <tr key={`group-${groupName}`} className="group-header" style={{ background: '#e2e8f0', borderBottom: '2px solid var(--color-border)' }}>
+                        <td colSpan="6" style={{ padding: '8px 16px', fontWeight: 700, color: '#475569', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             <FiPackage style={{ marginRight: '8px', verticalAlign: 'middle' }} />
                             {groupName}
                         </td>
