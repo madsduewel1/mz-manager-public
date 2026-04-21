@@ -68,6 +68,10 @@ print_info() {
     echo -e "${BLUE}${INFO} $1${NC}"
 }
 
+print_warn() {
+    echo -e "${YELLOW}${WARN} $1${NC}"
+}
+
 # --- Initialer Check ---
 if [[ $EUID -ne 0 ]]; then
    print_error "Dieses Script muss als root (sudo) ausgeführt werden!"
@@ -195,13 +199,13 @@ npm install --production
 # .env generieren
 print_info ".env Datei wird erstellt..."
 cat > .env << EOF
-DB_HOST=$DB_HOST
-DB_USER=$DB_USER
-DB_PASSWORD=$DB_PASS
-DB_NAME=$DB_NAME
-JWT_SECRET=$(openssl rand -base64 32)
+DB_HOST="$DB_HOST"
+DB_USER="$DB_USER"
+DB_PASSWORD="$DB_PASS"
+DB_NAME="$DB_NAME"
+JWT_SECRET="$(openssl rand -base64 32)"
 PORT=5000
-BASE_URL=http://$SYS_URL
+BASE_URL="http://$SYS_URL"
 EOF
 
 print_success "Backend ist konfiguriert"
