@@ -3,7 +3,7 @@ import {
     FiSettings, FiUsers, FiShield, FiCpu, FiMapPin, FiBox,
     FiLock, FiGrid, FiList, FiArrowLeft
 } from 'react-icons/fi';
-import { hasRole, hasPermission } from '../utils/auth';
+import { hasRole, hasPermission } from '../../utils/auth';
 
 const adminMenuItems = [
     { id: 'overview', path: '/admin', label: 'Übersicht', icon: FiGrid },
