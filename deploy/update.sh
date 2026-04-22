@@ -234,6 +234,9 @@ require('dotenv').config({ path: '$ENV_FILE' });
         await createTableIfMissing('accessories', 'migration_accessories_module.sql');
         await addColumnIfMissing('lendings', 'accessory_id', 'accessory_id INT NULL AFTER container_id');
 
+        // Assets Tabelle
+        await addColumnIfMissing('assets', 'name', 'name VARCHAR(255) AFTER id');
+
         // Settings sicherstellen
         await pool.query('INSERT IGNORE INTO settings (setting_key, setting_value) VALUES (\"module_accessories_enabled\", \"true\")');
         await pool.query('INSERT IGNORE INTO settings (setting_key, setting_value) VALUES (\"module_network_enabled\", \"true\")');
