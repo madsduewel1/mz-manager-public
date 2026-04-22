@@ -27,4 +27,23 @@ async function testConnection() {
     }
 }
 
-module.exports = { pool, testConnection };
+// Auto-migration for schema updates
+async function runMigrations() {
+    try {
+        const connection = await pool.getConnection();
+        
+        // Check if assets table has 'name' column
+        const [columns] = await connection.query('SHOW COLUMNS FROM assets LIKE "name"');
+        if (columns.length === 0) {
+            console.log('🔄 Adding missing "name" column to assets table...');
+            await connection.query('ALTER TABLE assets ADD COLUMN name VARCHAR(255) AFTER id');
+            console.log('✅ Column "name" added successfully');
+        }
+        
+        connection.release();
+    } catch (error) {
+        console.error('❌ Migration failed:', error.message);
+    }
+}
+
+module.exports = { pool, testConnection, runMigrations };

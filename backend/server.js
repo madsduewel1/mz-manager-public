@@ -3,7 +3,7 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-const { testConnection } = require('./config/database');
+const { testConnection, runMigrations } = require('./config/database');
 const { authMiddleware } = require('./middleware/auth');
 const multer = require('multer');
 
@@ -84,6 +84,9 @@ async function startServer() {
     if (!dbConnected) {
         console.error('⚠️  Server startet OHNE Datenbankverbindung');
         console.error('⚠️  Bitte überprüfen Sie die Datenbankkonfiguration in der .env Datei');
+    } else {
+        // Run database migrations if connected
+        await runMigrations();
     }
 
     app.listen(PORT, () => {

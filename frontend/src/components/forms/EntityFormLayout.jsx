@@ -30,7 +30,7 @@ const EntityFormLayout = ({ title, subtitle, children, onCancel, onSave, submitt
                 </div>
             </div>
 
-            <div className="card shadow-md" style={{ width: '100%', maxWidth: '800px', borderTop: '4px solid var(--color-text-primary)' }}>
+            <div className="card shadow-md" style={{ width: '100%', maxWidth: '1100px', borderTop: '4px solid var(--color-text-primary)' }}>
                 <div className="card-body" style={{ padding: 'var(--space-xl)' }}>
                     {children}
                 </div>

@@ -118,56 +118,6 @@ const AssetForm = ({ assetId, onSave, onCancel, setSubmitting: setParentSubmitti
 
     if (loading) return <div className="loading">Wird geladen...</div>;
 
-    // Reusable row: label left, input right
-    const Row = ({ label, required, children }) => (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '6px',
-            padding: '12px 0'
-        }}>
-            <label style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text-primary)' }}>
-                {label}{required && <span style={{ color: 'var(--color-error)', marginLeft: 4 }}>*</span>}
-            </label>
-            <div style={{ width: '100%' }}>{children}</div>
-        </div>
-    );
-
-    const Toggle = ({ label, description, checked, onChange }) => (
-        <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            padding: '14px 0',
-            borderBottom: '1px solid var(--color-border)'
-        }}>
-            <div>
-                <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>{label}</div>
-                {description && <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{description}</div>}
-            </div>
-            <label className="af-switch">
-                <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
-                <span className="af-slider"></span>
-            </label>
-        </div>
-    );
-
-    const SectionTitle = ({ children }) => (
-        <div style={{
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            color: 'var(--color-text-secondary)',
-            padding: '32px 0 8px',
-            borderBottom: '1px solid var(--color-border)',
-            marginBottom: '16px'
-        }}>
-            {children}
-        </div>
-    );
-
     return (
         <form id="entity-form" onSubmit={handleSubmit} style={{ width: '100%' }}>
             {error && (
@@ -365,5 +315,55 @@ const AssetForm = ({ assetId, onSave, onCancel, setSubmitting: setParentSubmitti
         </form>
     );
 };
+
+// Reusable row: label left, input right
+const Row = ({ label, required, children }) => (
+    <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        padding: '12px 0'
+    }}>
+        <label style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text-primary)' }}>
+            {label}{required && <span style={{ color: 'var(--color-error)', marginLeft: 4 }}>*</span>}
+        </label>
+        <div style={{ width: '100%' }}>{children}</div>
+    </div>
+);
+
+const Toggle = ({ label, description, checked, onChange }) => (
+    <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '12px',
+        padding: '14px 0',
+        borderBottom: '1px solid var(--color-border)'
+    }}>
+        <div>
+            <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>{label}</div>
+            {description && <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{description}</div>}
+        </div>
+        <label className="af-switch">
+            <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
+            <span className="af-slider"></span>
+        </label>
+    </div>
+);
+
+const SectionTitle = ({ children }) => (
+    <div style={{
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        color: 'var(--color-text-secondary)',
+        padding: '32px 0 8px',
+        borderBottom: '1px solid var(--color-border)',
+        marginBottom: '16px'
+    }}>
+        {children}
+    </div>
+);
 
 export default AssetForm;
