@@ -236,6 +236,12 @@ require('dotenv').config({ path: '$ENV_FILE' });
 
         // Assets Tabelle
         await addColumnIfMissing('assets', 'name', 'name VARCHAR(255) AFTER id');
+        await addColumnIfMissing('assets', 'is_reportable', 'is_reportable BOOLEAN DEFAULT TRUE AFTER notes');
+        await addColumnIfMissing('assets', 'is_lendable', 'is_lendable BOOLEAN DEFAULT TRUE AFTER is_reportable');
+        await addColumnIfMissing('assets', 'is_network_integrated', 'is_network_integrated BOOLEAN DEFAULT FALSE AFTER is_lendable');
+        
+        // Asset-Typen erweitern
+        await pool.query(\"ALTER TABLE assets MODIFY COLUMN type ENUM('laptop', 'ipad', 'tablet', 'pc', 'apple_tv', 'beamer', 'monitor', 'dokumentenkamera', 'drucker', 'lautsprecher', 'mikrofon', 'kamera', 'ladegeraet', 'adapter', 'maus', 'tastatur', 'sonstiges') NOT NULL\");
 
         // Settings sicherstellen
         await pool.query('INSERT IGNORE INTO settings (setting_key, setting_value) VALUES (\"module_accessories_enabled\", \"true\")');

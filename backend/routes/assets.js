@@ -416,9 +416,26 @@ router.post('/batch', authMiddleware, requirePermission('assets.create'), async 
 
                 const [result] = await connection.query(
                     `INSERT INTO assets 
-                     (inventory_number, serial_number, type, model, manufacturer, status, container_id, qr_code, purchase_date, warranty_until, notes) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [inventory_number, serial_number || null, type, model || null, manufacturer || null, status || 'ok', container_id, qr_code, purchase_date || null, warranty_until || null, notes || null]
+                     (name, inventory_number, serial_number, type, model, manufacturer, status, container_id, qr_code, purchase_date, warranty_until, notes, is_reportable, is_lendable, is_network_integrated, mac_address) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        assetData.name || null,
+                        inventory_number, 
+                        serial_number || null, 
+                        type, 
+                        model || null, 
+                        manufacturer || null, 
+                        status || 'ok', 
+                        container_id, 
+                        qr_code, 
+                        purchase_date || null, 
+                        warranty_until || null, 
+                        notes || null,
+                        assetData.is_reportable !== undefined ? !!assetData.is_reportable : true,
+                        assetData.is_lendable !== undefined ? !!assetData.is_lendable : true,
+                        assetData.is_network_integrated !== undefined ? !!assetData.is_network_integrated : false,
+                        assetData.mac_address || null
+                    ]
                 );
 
                 await connection.query(

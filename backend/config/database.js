@@ -37,9 +37,26 @@ async function runMigrations() {
         if (columns.length === 0) {
             console.log('🔄 Adding missing "name" column to assets table...');
             await connection.query('ALTER TABLE assets ADD COLUMN name VARCHAR(255) AFTER id');
-            console.log('✅ Column "name" added successfully');
         }
+
+        // Add missing boolean flags
+        const [repCol] = await connection.query('SHOW COLUMNS FROM assets LIKE "is_reportable"');
+        if (repCol.length === 0) {
+            console.log('🔄 Adding boolean flags to assets table...');
+            await connection.query('ALTER TABLE assets ADD COLUMN is_reportable BOOLEAN DEFAULT TRUE AFTER notes');
+            await connection.query('ALTER TABLE assets ADD COLUMN is_lendable BOOLEAN DEFAULT TRUE AFTER is_reportable');
+            await connection.query('ALTER TABLE assets ADD COLUMN is_network_integrated BOOLEAN DEFAULT FALSE AFTER is_lendable');
+        }
+
+        // Expand Type Enum (sicherstellen dass alle Typen erlaubt sind)
+        console.log('🔄 Updating asset types enum...');
+        await connection.query(`ALTER TABLE assets MODIFY COLUMN type ENUM(
+            'laptop', 'ipad', 'tablet', 'pc', 'apple_tv', 'beamer', 'monitor', 
+            'dokumentenkamera', 'drucker', 'lautsprecher', 'mikrofon', 'kamera', 
+            'ladegeraet', 'adapter', 'maus', 'tastatur', 'sonstiges'
+        ) NOT NULL`);
         
+        console.log('✅ Database migration successful');
         connection.release();
     } catch (error) {
         console.error('❌ Migration failed:', error.message);
