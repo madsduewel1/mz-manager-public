@@ -71,71 +71,74 @@ const ContainerForm = ({ containerId, onSave, onCancel }) => {
     if (loading) return <div className="loading">Wird geladen...</div>;
 
     return (
-        <form id="entity-form" onSubmit={handleSubmit}>
+        <form id="entity-form" onSubmit={handleSubmit} style={{ width: '100%' }}>
             {error && (
                 <div className="alert alert-danger mb-lg">
                     {error}
                 </div>
             )}
 
-            <div className="form-group">
-                <label className="form-label">Name *</label>
-                <input
-                    type="text"
-                    className="form-input"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                />
-            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>Name *</label>
+                    <input
+                        type="text"
+                        className="form-input"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        required
+                    />
+                </div>
 
-            <div className="form-group">
-                <label className="form-label">Typ</label>
-                <select
-                    className="form-select"
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                >
-                    <option value="wagen">Wagen</option>
-                    <option value="koffer">Koffer</option>
-                    <option value="fach">Fach</option>
-                    <option value="sonstiges">Sonstiges</option>
-                </select>
-            </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>Typ</label>
+                    <select
+                        className="form-select"
+                        value={formData.type}
+                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    >
+                        <option value="raum">Raum</option>
+                        <option value="wagen">Wagen</option>
+                        <option value="koffer">Koffer</option>
+                        <option value="fach">Fach</option>
+                        <option value="sonstiges">Sonstiges</option>
+                    </select>
+                </div>
 
-            <div className="form-group">
-                <label className="form-label">Raum / Standort (optional)</label>
-                <select
-                    className="form-select"
-                    value={formData.parent_container_id || ''}
-                    onChange={(e) => setFormData({ ...formData, parent_container_id: e.target.value || null })}
-                >
-                    <option value="">-- Kein Raum zugewiesen --</option>
-                    {rooms.map(room => (
-                        <option key={room.id} value={room.id}>{room.name}</option>
-                    ))}
-                </select>
-            </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>Raum / Standort (optional)</label>
+                    <select
+                        className="form-select"
+                        value={formData.parent_container_id || ''}
+                        onChange={(e) => setFormData({ ...formData, parent_container_id: e.target.value || null })}
+                    >
+                        <option value="">-- Kein Raum zugewiesen --</option>
+                        {rooms.map(room => (
+                            <option key={room.id} value={room.id}>{room.name}</option>
+                        ))}
+                    </select>
+                </div>
 
-            <div className="form-group">
-                <label className="form-label">Zusätzliche Standort-Info (z.B. Schranknummer)</label>
-                <input
-                    type="text"
-                    className="form-input"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="Optional"
-                />
-            </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>Zusätzliche Standort-Info (z.B. Schranknummer)</label>
+                    <input
+                        type="text"
+                        className="form-input"
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="Optional"
+                    />
+                </div>
 
-            <div className="form-group">
-                <label className="form-label">Beschreibung</label>
-                <textarea
-                    className="form-input"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows="3"
-                />
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontWeight: 600 }}>Beschreibung</label>
+                    <textarea
+                        className="form-input"
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        rows="3"
+                    />
+                </div>
             </div>
             
             <button type="submit" style={{ display: 'none' }} />

@@ -30,25 +30,17 @@ const EntityFormLayout = ({ title, subtitle, children, onCancel, onSave, submitt
                 </div>
             </div>
 
-            <div className="card shadow-lg" style={{ maxWidth: '800px', margin: '0 auto' }}>
+            <div className="card shadow-sm" style={{ width: '100%', maxWidth: '900px' }}>
                 <div className="card-body">
                     {children}
                 </div>
                 <div className="card-footer" style={{ 
                     display: 'flex', 
-                    justifyContent: 'flex-end', 
+                    justifyContent: 'flex-start', 
                     gap: 'var(--space-md)',
                     borderTop: '1px solid var(--color-border)',
                     paddingTop: 'var(--space-lg)'
                 }}>
-                    <button 
-                        type="button"
-                        onClick={handleBack} 
-                        className="btn btn-secondary"
-                        disabled={submitting}
-                    >
-                        Abbrechen
-                    </button>
                     <button 
                         type="button"
                         onClick={onSave} 
@@ -57,21 +49,29 @@ const EntityFormLayout = ({ title, subtitle, children, onCancel, onSave, submitt
                     >
                         {submitting ? 'Wird gespeichert...' : (saveLabel || 'Speichern')}
                     </button>
+                    <button 
+                        type="button"
+                        onClick={handleBack} 
+                        className="btn btn-secondary"
+                        disabled={submitting}
+                    >
+                        Abbrechen
+                    </button>
                 </div>
             </div>
 
             <style>{`
                 .card {
-                    background: var(--color-bg-light);
-                    border-radius: 20px;
+                    background: var(--color-bg-medium);
+                    border-radius: var(--radius-md);
                     border: 1px solid var(--color-border);
                 }
                 .card-body {
-                    padding: var(--space-xl);
+                    padding: var(--space-lg);
                 }
                 .card-footer {
-                    padding: var(--space-lg) var(--space-xl);
-                    background: var(--color-bg-medium);
+                    padding: var(--space-md) var(--space-lg);
+                    background: var(--color-bg-light);
                 }
             `}</style>
         </div>

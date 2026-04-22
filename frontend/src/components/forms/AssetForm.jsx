@@ -117,30 +117,29 @@ const AssetForm = ({ assetId, onSave, onCancel }) => {
     // Reusable row: label left, input right
     const Row = ({ label, required, children }) => (
         <div style={{
-            display: 'grid',
-            gridTemplateColumns: '180px 1fr',
-            gap: '12px',
-            alignItems: 'center',
-            padding: '14px 0',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+            padding: '12px 0',
             borderBottom: '1px solid var(--color-border)'
         }}>
-            <label style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text-secondary)', textAlign: 'right', paddingRight: '8px' }}>
+            <label style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
                 {label}{required && <span style={{ color: 'var(--color-error)', marginLeft: 4 }}>*</span>}
             </label>
-            <div>{children}</div>
+            <div style={{ width: '100%' }}>{children}</div>
         </div>
     );
 
     const Toggle = ({ label, description, checked, onChange }) => (
         <div style={{
-            display: 'grid',
-            gridTemplateColumns: '180px 1fr',
-            gap: '12px',
+            display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
             padding: '14px 0',
             borderBottom: '1px solid var(--color-border)'
         }}>
-            <div style={{ textAlign: 'right', paddingRight: '8px' }}>
+            <div>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>{label}</div>
                 {description && <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{description}</div>}
             </div>
@@ -153,27 +152,28 @@ const AssetForm = ({ assetId, onSave, onCancel }) => {
 
     const SectionTitle = ({ children }) => (
         <div style={{
-            fontSize: '0.7rem',
+            fontSize: '0.75rem',
             fontWeight: 700,
             textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            color: 'var(--color-text-muted)',
-            padding: '20px 0 4px',
-            marginTop: '8px'
+            letterSpacing: '0.05em',
+            color: 'var(--color-primary)',
+            padding: '24px 0 8px',
+            borderBottom: '2px solid var(--color-primary)',
+            marginBottom: '8px'
         }}>
             {children}
         </div>
     );
 
     return (
-        <form id="entity-form" onSubmit={handleSubmit} style={{ maxWidth: '680px' }}>
+        <form id="entity-form" onSubmit={handleSubmit} style={{ width: '100%' }}>
             {error && (
                 <div className="alert alert-danger mb-lg" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <FiAlertCircle />{error}
                 </div>
             )}
 
-            <div style={{ background: 'var(--color-bg-light)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '0 24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
 
                 <SectionTitle>Basisdaten</SectionTitle>
 
