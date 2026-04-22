@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiCheck } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiCheck, FiArrowLeft } from 'react-icons/fi';
 import { helpAPI } from '../../services/api';
-import Modal from '../../components/Modal';
 
 const HelpAdmin = () => {
     const [modules, setModules] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const [editingEntry, setEditingEntry] = useState(null);
     const [formData, setFormData] = useState({
         module: '',
@@ -33,7 +32,7 @@ const HelpAdmin = () => {
         }
     };
 
-    const handleOpenModal = (entry = null) => {
+    const handleOpenEditor = (entry = null) => {
         if (entry) {
             setEditingEntry(entry);
             setFormData({
@@ -53,11 +52,12 @@ const HelpAdmin = () => {
                 order_index: 0
             });
         }
-        setIsModalOpen(true);
+        setIsEditing(true);
+        window.scrollTo(0, 0);
     };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
+    const handleCloseEditor = () => {
+        setIsEditing(false);
         setEditingEntry(null);
     };
 
@@ -76,7 +76,7 @@ const HelpAdmin = () => {
                 await helpAPI.createEntry(formData);
                 setSuccessMessage('Neuer Hilfe-Eintrag erstellt.');
             }
-            handleCloseModal();
+            handleCloseEditor();
             loadHelpModules();
             setTimeout(() => setSuccessMessage(''), 3000);
         } catch (err) {
@@ -98,53 +98,179 @@ const HelpAdmin = () => {
         }
     };
 
+    // Editor View
+    if (isEditing) {
+        return (
+            <div className="fade-in editor-mode" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem', marginBottom: '2rem' }}>
+                    <button className="btn btn-icon" onClick={handleCloseEditor} title="Zurück">
+                        <FiArrowLeft size={24} />
+                    </button>
+                    <h2 className="card-title" style={{ margin: 0 }}>
+                        {editingEntry ? 'Hilfe-Eintrag bearbeiten' : 'Neuer Hilfe-Eintrag'}
+                    </h2>
+                </div>
+
+                <form onSubmit={handleSubmit} className="card p-xl" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'var(--bg-secondary)', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                    
+                    <div className="grid grid-2 grid-mobile-1" style={{ gap: '1.5rem' }}>
+                        <div className="form-group">
+                            <label className="form-label" style={{ fontWeight: 600, fontSize: '1rem' }}>Modul-Schlüssel</label>
+                            <input 
+                                type="text" 
+                                className="form-control" 
+                                name="module" 
+                                value={formData.module} 
+                                onChange={handleChange} 
+                                placeholder="z.B. dashboard, assets, containers"
+                                style={{ padding: '0.75rem', fontSize: '1rem' }}
+                                required 
+                            />
+                            <small className="text-muted" style={{ marginTop: '0.5rem', display: 'block' }}>Bestimmt, auf welcher Seite die Hilfe erscheint.</small>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label" style={{ fontWeight: 600, fontSize: '1rem' }}>Benötigte Berechtigung</label>
+                            <input 
+                                type="text" 
+                                className="form-control" 
+                                name="permission_required" 
+                                value={formData.permission_required} 
+                                onChange={handleChange} 
+                                placeholder="z.B. all, assets.view"
+                                style={{ padding: '0.75rem', fontSize: '1rem' }}
+                                required 
+                            />
+                            <small className="text-muted" style={{ marginTop: '0.5rem', display: 'block' }}>Welches Recht braucht der Nutzer, um dies zu sehen?</small>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-2 grid-mobile-1" style={{ gap: '1.5rem', alignItems: 'start' }}>
+                        <div className="form-group">
+                            <label className="form-label" style={{ fontWeight: 600, fontSize: '1rem' }}>Titel (Überschrift)</label>
+                            <input 
+                                type="text" 
+                                className="form-control" 
+                                name="title" 
+                                value={formData.title} 
+                                onChange={handleChange} 
+                                placeholder="Titel des Hilfe-Artikels"
+                                style={{ padding: '0.75rem', fontSize: '1rem' }}
+                                required 
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label" style={{ fontWeight: 600, fontSize: '1rem' }}>Reihenfolge</label>
+                            <input 
+                                type="number" 
+                                className="form-control" 
+                                name="order_index" 
+                                value={formData.order_index} 
+                                onChange={handleChange} 
+                                style={{ padding: '0.75rem', fontSize: '1rem' }}
+                            />
+                            <small className="text-muted" style={{ marginTop: '0.5rem', display: 'block' }}>Niedrigere Zahlen erscheinen weiter oben.</small>
+                        </div>
+                    </div>
+
+                    <div className="form-group" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                        <label className="form-label" style={{ fontWeight: 600, fontSize: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Inhalt (HTML erlaubt)</span>
+                        </label>
+                        <textarea 
+                            className="form-control" 
+                            name="content" 
+                            value={formData.content} 
+                            onChange={handleChange} 
+                            rows="20" 
+                            style={{ padding: '1rem', fontSize: '1rem', fontFamily: 'monospace', lineHeight: '1.5', minHeight: '400px', resize: 'vertical' }}
+                            placeholder="<p>Hier kommt der Text hin...</p>"
+                            required 
+                        />
+                        <div style={{ marginTop: '0.75rem', padding: '1rem', background: 'rgba(59, 130, 246, 0.1)', borderLeft: '4px solid var(--color-primary)', borderRadius: '4px' }}>
+                            <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                                <strong>Tipp:</strong> Du kannst HTML-Tags verwenden, um den Text schöner zu machen. 
+                                <code style={{ margin: '0 5px' }}>&lt;p&gt;Absatz&lt;/p&gt;</code>
+                                <code style={{ margin: '0 5px' }}>&lt;b&gt;Fett&lt;/b&gt;</code>
+                                <code style={{ margin: '0 5px' }}>&lt;ul&gt;&lt;li&gt;Liste&lt;/li&gt;&lt;/ul&gt;</code>
+                                <code style={{ margin: '0 5px' }}>&lt;h3&gt;Überschrift&lt;/h3&gt;</code>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="form-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                        <button type="button" className="btn btn-outline" onClick={handleCloseEditor} style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}>Abbrechen</button>
+                        <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 1.5rem', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <FiSave size={18} /> Speichern
+                        </button>
+                    </div>
+                </form>
+            </div>
+        );
+    }
+
+    // List View
     return (
         <div className="fade-in">
-            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2 className="card-title">Hilfe-System verwalten</h2>
-                <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+                <button className="btn btn-primary" onClick={() => handleOpenEditor()} style={{ padding: '0.75rem 1.5rem' }}>
                     <FiPlus /> Neuer Eintrag
                 </button>
             </div>
 
             {successMessage && (
-                <div className="alert success" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ebfbee', color: '#2b8a3e', padding: '1rem', borderRadius: '4px' }}>
-                    <FiCheck /> {successMessage}
+                <div className="alert success" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ebfbee', color: '#2b8a3e', padding: '1rem', borderRadius: '8px' }}>
+                    <FiCheck size={20} /> <span style={{ fontWeight: 500 }}>{successMessage}</span>
                 </div>
             )}
 
             {loading ? (
-                <div>Lade...</div>
+                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Lade Hilfe-Texte...</div>
             ) : (
-                <div className="help-modules-list">
+                <div className="help-modules-list" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     {modules.map(mod => (
-                        <div key={mod.module} className="card mb-md">
-                            <div className="card-header" style={{ background: 'var(--bg-secondary)' }}>
-                                <h3 className="card-title" style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                                    <span>{mod.module} <small className="text-muted" style={{ fontSize: '0.8em', marginLeft: '1rem' }}>Benötigtes Recht: {mod.permission_required}</small></span>
+                        <div key={mod.module} className="card" style={{ overflow: 'hidden' }}>
+                            <div className="card-header" style={{ background: 'var(--bg-secondary)', padding: '1rem 1.5rem' }}>
+                                <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: 0 }}>
+                                    <span style={{ fontSize: '1.1rem', textTransform: 'capitalize' }}>{mod.module}</span>
+                                    <span className="badge" style={{ background: 'var(--bg-tertiary)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>
+                                        Recht: {mod.permission_required}
+                                    </span>
                                 </h3>
                             </div>
-                            <div className="card-body">
+                            <div className="card-body" style={{ padding: 0 }}>
                                 <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
-                                        <tr>
-                                            <th style={{ textAlign: 'left', padding: '0.5rem' }}>Reihenfolge</th>
-                                            <th style={{ textAlign: 'left', padding: '0.5rem' }}>Titel</th>
-                                            <th style={{ textAlign: 'right', padding: '0.5rem' }}>Aktionen</th>
+                                        <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '2px solid var(--border-color)' }}>
+                                            <th style={{ textAlign: 'left', padding: '0.75rem 1.5rem', width: '80px' }}>Pos.</th>
+                                            <th style={{ textAlign: 'left', padding: '0.75rem 1.5rem' }}>Titel</th>
+                                            <th style={{ textAlign: 'right', padding: '0.75rem 1.5rem', width: '120px' }}>Aktionen</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {mod.entries.map(entry => (
-                                            <tr key={entry.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                                <td style={{ padding: '0.5rem' }}>{entry.order_index}</td>
-                                                <td style={{ padding: '0.5rem' }}>{entry.title}</td>
-                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                                                    <button className="btn btn-icon" onClick={() => handleOpenModal({ ...entry, module: mod.module, permission_required: mod.permission_required })} title="Bearbeiten">
-                                                        <FiEdit2 />
-                                                    </button>
-                                                    <button className="btn btn-icon text-danger" onClick={() => handleDelete(entry.id)} title="Löschen" style={{ color: 'var(--color-error)' }}>
-                                                        <FiTrash2 />
-                                                    </button>
+                                        {mod.entries.map((entry, idx) => (
+                                            <tr key={entry.id} style={{ borderBottom: idx < mod.entries.length - 1 ? '1px solid var(--border-color)' : 'none', transition: 'background 0.2s' }} className="table-row-hover">
+                                                <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{entry.order_index}</td>
+                                                <td style={{ padding: '1rem 1.5rem', fontWeight: 500 }}>{entry.title}</td>
+                                                <td style={{ padding: '0.75rem 1.5rem', textAlign: 'right' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                        <button 
+                                                            className="btn btn-icon" 
+                                                            onClick={() => handleOpenEditor({ ...entry, module: mod.module, permission_required: mod.permission_required })} 
+                                                            title="Bearbeiten"
+                                                            style={{ background: 'var(--bg-secondary)' }}
+                                                        >
+                                                            <FiEdit2 />
+                                                        </button>
+                                                        <button 
+                                                            className="btn btn-icon" 
+                                                            onClick={() => handleDelete(entry.id)} 
+                                                            title="Löschen" 
+                                                            style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}
+                                                        >
+                                                            <FiTrash2 />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -153,39 +279,13 @@ const HelpAdmin = () => {
                             </div>
                         </div>
                     ))}
-                    {modules.length === 0 && <p className="text-muted">Keine Hilfe-Einträge gefunden.</p>}
+                    {modules.length === 0 && (
+                        <div style={{ textAlign: 'center', padding: '4rem', background: 'var(--bg-secondary)', borderRadius: '8px', color: 'var(--text-muted)' }}>
+                            Noch keine Hilfe-Einträge vorhanden. Klicke oben auf "Neuer Eintrag".
+                        </div>
+                    )}
                 </div>
             )}
-
-            <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingEntry ? 'Hilfe-Eintrag bearbeiten' : 'Neuer Hilfe-Eintrag'}>
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group mb-md">
-                        <label className="form-label">Modul-Schlüssel (z.B. 'dashboard', 'assets')</label>
-                        <input type="text" className="form-control" name="module" value={formData.module} onChange={handleChange} required />
-                    </div>
-                    <div className="form-group mb-md">
-                        <label className="form-label">Benötigte Berechtigung (z.B. 'all', 'assets.view')</label>
-                        <input type="text" className="form-control" name="permission_required" value={formData.permission_required} onChange={handleChange} required />
-                    </div>
-                    <div className="form-group mb-md">
-                        <label className="form-label">Titel (Überschrift)</label>
-                        <input type="text" className="form-control" name="title" value={formData.title} onChange={handleChange} required />
-                    </div>
-                    <div className="form-group mb-md">
-                        <label className="form-label">Inhalt (HTML erlaubt)</label>
-                        <textarea className="form-control" name="content" value={formData.content} onChange={handleChange} rows="5" required />
-                        <small className="text-muted">Du kannst hier HTML-Tags wie &lt;p&gt;, &lt;b&gt;, &lt;ul&gt; etc. verwenden.</small>
-                    </div>
-                    <div className="form-group mb-md">
-                        <label className="form-label">Reihenfolge (Sortierung)</label>
-                        <input type="number" className="form-control" name="order_index" value={formData.order_index} onChange={handleChange} />
-                    </div>
-                    <div className="form-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
-                        <button type="button" className="btn btn-outline" onClick={handleCloseModal}>Abbrechen</button>
-                        <button type="submit" className="btn btn-primary"><FiSave /> Speichern</button>
-                    </div>
-                </form>
-            </Modal>
         </div>
     );
 };
