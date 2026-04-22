@@ -37,6 +37,7 @@ const NetworkFormPage = lazy(() => import('./pages/NetworkFormPage'));
 const AccessoryFormPage = lazy(() => import('./pages/AccessoryFormPage'));
 const LendingFormPage = lazy(() => import('./pages/LendingFormPage'));
 const Forbidden = lazy(() => import('./pages/Forbidden'));
+const HelpCenter = lazy(() => import('./pages/HelpCenter'));
 
 import Sidebar from './components/Sidebar';
 import Breadcrumbs from './components/Breadcrumbs';
@@ -202,6 +203,7 @@ function App() {
                                                             <Route path="/accessories" element={<Accessories />} />
                                                             <Route path="/accessories/new" element={<AccessoryFormPage />} />
                                                             <Route path="/accessories/:id/edit" element={<AccessoryFormPage />} />
+                                                            <Route path="/help" element={<HelpCenter />} />
                                                             <Route path="/admin" element={<Admin />}>
                                                                 <Route index element={<AdminOverview />} />
                                                                 <Route path="users" element={<UsersAdmin />} />

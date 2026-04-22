@@ -5,7 +5,6 @@ import {
     FiLogOut, FiSettings, FiUser, FiChevronDown,
     FiMenu, FiGrid, FiGlobe, FiCpu, FiX, FiHelpCircle
 } from 'react-icons/fi';
-import HelpViewer from './Help/HelpViewer';
 import { getUser, logout, hasRole, hasPermission, hasAdminPermission, hasAnyPermissions } from '../utils/auth';
 import { authAPI } from '../services/api';
 import { useSettings } from '../contexts/SettingsContext';
@@ -17,6 +16,7 @@ const DEFAULT_MENU_ORDER = [
     'containers',
     'lendings',
     'error-reports',
+    'help',
     'admin'
     // 'network' and 'accessories' will be added dynamically if enabled
 ];
@@ -29,6 +29,7 @@ const MENU_ITEMS_DATA = {
     'error-reports': { path: '/error-reports', label: 'Fehlermeldungen', icon: FiAlertCircle, color: '#ef4444', permission: 'errors.manage' },
     'network': { path: '/network', label: 'Netzwerk', icon: FiGlobe, color: '#10b981', permission: 'network.view', moduleKey: 'module_network_enabled' },
     'accessories': { path: '/accessories', label: 'Zubehör', icon: FiCpu, color: '#0ea5e9', permission: 'accessories.manage', moduleKey: 'module_accessories_enabled' },
+    'help': { path: '/help', label: 'Hilfe', icon: FiHelpCircle, color: '#14b8a6' },
     'admin': { path: '/admin', label: 'Verwaltung', icon: FiSettings, color: '#6b7280', adminOnly: true }
 };
 
@@ -38,7 +39,6 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
     const { isMobile, isTablet } = useMediaQuery();
     const isSmallScreen = isMobile || isTablet;
     const [userMenuOpen, setUserMenuOpen] = useState(false);
-    const [globalHelpOpen, setGlobalHelpOpen] = useState(false);
     const { settings } = useSettings();
     const { org_name: orgName, logo_path: logoPath } = settings;
 
@@ -316,21 +316,8 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
                             }
                         </>
                     )}
-
-                    {/* Global Help Button */}
-                    <div style={{ marginTop: 'auto', paddingBottom: '20px', paddingTop: '20px' }}>
-                        <button
-                            onClick={() => setGlobalHelpOpen(true)}
-                            className="sidebar-link"
-                            style={{ ...styles.link, background: 'var(--bg-hover)', color: 'var(--color-primary)' }}
-                        >
-                            <FiHelpCircle size={20} />
-                            <span>Hilfe-Center</span>
-                        </button>
-                    </div>
                 </nav>
             </aside>
-            <HelpViewer isOpen={globalHelpOpen} onClose={() => setGlobalHelpOpen(false)} moduleContext={null} />
         </>
     );
 }
