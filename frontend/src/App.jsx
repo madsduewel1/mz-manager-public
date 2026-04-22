@@ -27,6 +27,7 @@ const LogsAdmin = lazy(() => import('./pages/admin/LogsAdmin'));
 const QRCodesAdmin = lazy(() => import('./pages/admin/QRCodesAdmin'));
 const PermissionsAdmin = lazy(() => import('./pages/admin/PermissionsAdmin'));
 const SettingsAdmin = lazy(() => import('./pages/admin/SettingsAdmin'));
+const HelpAdmin = lazy(() => import('./pages/admin/HelpAdmin'));
 const Network = lazy(() => import('./pages/Network'));
 const Accessories = lazy(() => import('./pages/Accessories'));
 const NotFound = lazy(() => import('./pages/NotFound'));
@@ -211,6 +212,7 @@ function App() {
                                                                 <Route path="qr-codes" element={<QRCodesAdmin />} />
                                                                 <Route path="logs" element={<LogsAdmin />} />
                                                                 <Route path="settings" element={<SettingsAdmin />} />
+                                                                <Route path="help" element={<HelpAdmin />} />
                                                             </Route>
                                                             <Route path="*" element={<NotFound />} />
                                                         </Routes>

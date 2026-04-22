@@ -19,6 +19,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const settingsRoutes = require('./routes/settings');
 const networkRoutes = require('./routes/network');
 const accessoriesRoutes = require('./routes/accessories');
+const helpRoutes = require('./routes/help');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -56,6 +57,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/network', networkRoutes);
 app.use('/api/accessories', accessoriesRoutes);
+app.use('/api/help', helpRoutes);
 
 // 404 handler
 app.use((req, res) => {

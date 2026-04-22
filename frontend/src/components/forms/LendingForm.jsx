@@ -36,7 +36,7 @@ const LendingForm = ({ onSave, onCancel, generatePDF }) => {
             ]);
 
             setActiveLendings(lendingRes.data.filter(l => !l.returned));
-            setAssets(assetRes.data.filter(a => a.status === 'ok'));
+            setAssets(assetRes.data.filter(a => a.status === 'ok' && a.is_lendable !== 0 && a.is_lendable !== false));
             setContainers(containerRes.data);
 
             if (settings.module_accessories_enabled === 'true') {

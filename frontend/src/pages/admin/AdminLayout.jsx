@@ -14,6 +14,7 @@ const adminMenuItems = [
     { id: 'rooms', path: '/admin/rooms', label: 'Räume', icon: FiMapPin, permission: 'rooms.view' },
     { id: 'qr-codes', path: '/admin/qr-codes', label: 'QR-Codes', icon: FiBox, permission: 'qr.print' },
     { id: 'logs', path: '/admin/logs', label: 'System-Logs', icon: FiList, permission: 'logs.view' },
+    { id: 'help', path: '/admin/help', label: 'Hilfe-Texte', icon: FiBox, role: 'Administrator' },
     { id: 'settings', path: '/admin/settings', label: 'Einstellungen', icon: FiSettings, role: 'Administrator' }
 ];
 

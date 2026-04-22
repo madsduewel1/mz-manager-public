@@ -101,6 +101,7 @@ const AdminOverview = () => {
                             <Link to="/admin/roles" className="btn btn-outline btn-block" style={{justifyContent:'start'}}><FiShield /> Rollen & Rechte</Link>
                             <Link to="/admin/models" className="btn btn-outline btn-block" style={{justifyContent:'start'}}><FiCpu /> Gerätemodelle</Link>
                             <Link to="/admin/rooms" className="btn btn-outline btn-block" style={{justifyContent:'start'}}><FiMapPin /> Räume & Standorte</Link>
+                            <Link to="/admin/help" className="btn btn-outline btn-block" style={{justifyContent:'start'}}><FiCheck /> Hilfe-Texte verwalten</Link>
                         </div>
                     </div>
                 </div>

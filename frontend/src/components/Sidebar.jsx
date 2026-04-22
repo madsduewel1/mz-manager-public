@@ -3,8 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import {
     FiHome, FiMonitor, FiBox, FiRepeat, FiAlertCircle,
     FiLogOut, FiSettings, FiUser, FiChevronDown,
-    FiMenu, FiGrid, FiGlobe, FiCpu, FiX
+    FiMenu, FiGrid, FiGlobe, FiCpu, FiX, FiHelpCircle
 } from 'react-icons/fi';
+import HelpViewer from './Help/HelpViewer';
 import { getUser, logout, hasRole, hasPermission, hasAdminPermission, hasAnyPermissions } from '../utils/auth';
 import { authAPI } from '../services/api';
 import { useSettings } from '../contexts/SettingsContext';
@@ -37,6 +38,7 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
     const { isMobile, isTablet } = useMediaQuery();
     const isSmallScreen = isMobile || isTablet;
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [globalHelpOpen, setGlobalHelpOpen] = useState(false);
     const { settings } = useSettings();
     const { org_name: orgName, logo_path: logoPath } = settings;
 
@@ -302,7 +304,6 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
                         .map((id, index) => renderMenuItem(id, index))
                     }
 
-                    {/* Additional Modules Section */}
                     {Object.keys(MENU_ITEMS_DATA).some(id => MENU_ITEMS_DATA[id].moduleKey && settings[MENU_ITEMS_DATA[id].moduleKey] === 'true') && (
                         <>
                             <div style={{ ...styles.sectionHeader, marginTop: '20px' }}>
@@ -315,8 +316,21 @@ function Sidebar({ isOpen, onClose, onProfileClick }) {
                             }
                         </>
                     )}
+
+                    {/* Global Help Button */}
+                    <div style={{ marginTop: 'auto', paddingBottom: '20px', paddingTop: '20px' }}>
+                        <button
+                            onClick={() => setGlobalHelpOpen(true)}
+                            className="sidebar-link"
+                            style={{ ...styles.link, background: 'var(--bg-hover)', color: 'var(--color-primary)' }}
+                        >
+                            <FiHelpCircle size={20} />
+                            <span>Hilfe-Center</span>
+                        </button>
+                    </div>
                 </nav>
             </aside>
+            <HelpViewer isOpen={globalHelpOpen} onClose={() => setGlobalHelpOpen(false)} moduleContext={null} />
         </>
     );
 }

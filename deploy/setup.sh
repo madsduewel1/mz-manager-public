@@ -123,12 +123,8 @@ if ! command -v nginx &> /dev/null; then
 fi
 print_success "Nginx ist bereit"
 
-# PM2
-if ! command -v pm2 &> /dev/null; then
-    print_info "PM2 wird installiert..."
-    npm install -g pm2
-fi
-print_success "PM2 ist bereit"
+# Systemd (eingebaut)
+print_success "Systemd ist bereit"
 
 # 2. Interaktive Konfiguration
 print_step "Interaktive Einrichtung"
@@ -239,12 +235,36 @@ print_success "Berechtigungen für den Webserver ($SYS_URL) gesetzt"
 # 6. Dienste konfigurieren
 print_step "Services & Webserver konfigurieren"
 
-# PM2
-cd "$BACKEND_DIR"
-pm2 stop mz-manager-api &> /dev/null || true
-pm2 start server.js --name mz-manager-api
-pm2 save
-pm2 startup | grep "sudo" | bash -
+# Systemd Service einrichten
+print_info "Systemd Service wird erstellt..."
+
+# Altes PM2 aufräumen, falls vorhanden
+if command -v pm2 &> /dev/null; then
+    pm2 stop mz-manager-api &> /dev/null || true
+    pm2 delete mz-manager-api &> /dev/null || true
+    pm2 save &> /dev/null || true
+fi
+
+cat > /etc/systemd/system/mz-manager.service << EOF
+[Unit]
+Description=MZ-Manager Backend
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=$BACKEND_DIR
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+Environment="NODE_ENV=production"
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable mz-manager
+systemctl restart mz-manager
 
 # Nginx Config generieren
 NGINX_CONF="/etc/nginx/sites-available/mz-manager"

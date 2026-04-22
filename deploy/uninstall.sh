@@ -33,10 +33,16 @@ fi
 
 PROJECT_PATH=$(pwd)
 
-# 1. PM2 stoppen und löschen
-echo -e "\n${BLUE}${STOP} Stoppe PM2-Prozesse...${NC}"
-pm2 delete mz-manager-api 2>/dev/null || true
-pm2 save --force
+# 1. Dienste stoppen und löschen
+echo -e "\n${BLUE}${STOP} Stoppe Systemd- und PM2-Prozesse...${NC}"
+if command -v pm2 &> /dev/null; then
+    pm2 delete mz-manager-api 2>/dev/null || true
+    pm2 save --force 2>/dev/null || true
+fi
+sudo systemctl stop mz-manager 2>/dev/null || true
+sudo systemctl disable mz-manager 2>/dev/null || true
+sudo rm -f /etc/systemd/system/mz-manager.service
+sudo systemctl daemon-reload
 
 # 2. Nginx Konfiguration entfernen
 echo -e "${BLUE}🌐 Entferne Nginx-Konfiguration...${NC}"

@@ -128,9 +128,9 @@ else
     print_info "Freier Speicherplatz: ${FREE_MB}MB — OK"
 fi
 
-# PM2 Status prüfen
-PM2_STATUS=$(pm2 jlist 2>/dev/null | python3 -c "import sys,json; procs=json.load(sys.stdin); p=[x for x in procs if x['name']=='mz-manager-api']; print(p[0]['pm2_env']['status'] if p else 'not found')" 2>/dev/null || echo "unknown")
-print_info "PM2 Status vor Update: ${PM2_STATUS}"
+# Systemd Status prüfen
+SERVICE_STATUS=$(systemctl is-active mz-manager 2>/dev/null || echo "unknown")
+print_info "Service Status vor Update: ${SERVICE_STATUS}"
 
 # Aktuelle Version notieren
 CURRENT_COMMIT=$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unbekannt")
@@ -310,16 +310,39 @@ print_success "Berechtigungen wurden aktualisiert"
 # ==============================================================================
 print_step 7 "Services neustarten"
 
-# Backend neustarten
-if pm2 list | grep -q "mz-manager-api"; then
-    pm2 restart mz-manager-api
-    print_info "PM2: mz-manager-api neugestartet"
-else
-    cd "$BACKEND_DIR"
-    pm2 start server.js --name mz-manager-api
-    pm2 save
-    print_info "PM2: mz-manager-api neu gestartet (war nicht aktiv)"
+# Altes PM2 aufräumen, falls vorhanden
+if command -v pm2 &> /dev/null; then
+    pm2 stop mz-manager-api &> /dev/null || true
+    pm2 delete mz-manager-api &> /dev/null || true
+    pm2 save &> /dev/null || true
 fi
+
+# Backend neustarten
+if [[ ! -f /etc/systemd/system/mz-manager.service ]]; then
+    print_info "Erstelle systemd Service für mz-manager..."
+    cat > /etc/systemd/system/mz-manager.service << EOF
+[Unit]
+Description=MZ-Manager Backend
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=$BACKEND_DIR
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+Environment="NODE_ENV=production"
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable mz-manager
+fi
+
+systemctl daemon-reload
+systemctl restart mz-manager
+print_info "Systemd: mz-manager neugestartet"
 
 # Nginx neuladen
 nginx -t && systemctl reload nginx
@@ -340,16 +363,16 @@ if [[ "$HTTP_STATUS" == "200" ]]; then
     print_success "API Health Check: HTTP $HTTP_STATUS — OK"
 else
     print_warn "API Health Check: HTTP $HTTP_STATUS — API antwortet nicht wie erwartet"
-    print_info "Prüfe mit: pm2 logs mz-manager-api --lines 20"
+    print_info "Prüfe mit: journalctl -u mz-manager --no-pager -n 20"
 fi
 
-# PM2 Status prüfen
-PM2_POST_STATUS=$(pm2 jlist 2>/dev/null | python3 -c "import sys,json; procs=json.load(sys.stdin); p=[x for x in procs if x['name']=='mz-manager-api']; print(p[0]['pm2_env']['status'] if p else 'nicht gefunden')" 2>/dev/null || echo "unbekannt")
+# Systemd Status prüfen
+SERVICE_POST_STATUS=$(systemctl is-active mz-manager 2>/dev/null || echo "unknown")
 
-if [[ "$PM2_POST_STATUS" == "online" ]]; then
-    print_success "PM2 Status: online ✔"
+if [[ "$SERVICE_POST_STATUS" == "active" ]]; then
+    print_success "Service Status: active ✔"
 else
-    print_warn "PM2 Status: ${PM2_POST_STATUS} — bitte prüfen!"
+    print_warn "Service Status: ${SERVICE_POST_STATUS} — bitte prüfen!"
 fi
 
 # Nginx Status prüfen
@@ -370,7 +393,7 @@ echo ""
 echo -e "${BOLD}Zusammenfassung:${NC}"
 echo -e "  📦 Version  : ${CYAN}${CURRENT_COMMIT}${NC} → ${GREEN}${NEW_COMMIT}${NC}"
 echo -e "  🌐 API      : HTTP ${HTTP_STATUS}"
-echo -e "  ⚙️  PM2      : ${PM2_POST_STATUS}"
+echo -e "  ⚙️  Service  : ${SERVICE_POST_STATUS}"
 echo -e "  📄 Log-Datei: ${LOG_FILE}"
 echo ""
 echo -e "${PURPLE}${BOLD}MZ-Manager ist bereit!${NC}"

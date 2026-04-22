@@ -145,4 +145,13 @@ export const accessoriesAPI = {
     deleteAccessory: (id) => api.delete(`/accessories/${id}`)
 };
 
+// Help API
+export const helpAPI = {
+    getAllModules: () => api.get('/help'),
+    getModule: (moduleName) => api.get(`/help/${moduleName}`),
+    createEntry: (data) => api.post('/help', data),
+    updateEntry: (id, data) => api.put(`/help/${id}`, data),
+    deleteEntry: (id) => api.delete(`/help/${id}`)
+};
+
 export default api;
