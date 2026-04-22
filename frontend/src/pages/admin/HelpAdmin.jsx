@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX, FiCheck } from 'react-icons/fi';
-import { helpAPI } from '../../../services/api';
-import Modal from '../../../components/Modal';
+import { helpAPI } from '../../services/api';
+import Modal from '../../components/Modal';
 
 const HelpAdmin = () => {
     const [modules, setModules] = useState([]);
