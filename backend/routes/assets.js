@@ -166,9 +166,10 @@ router.post('/', authMiddleware, requirePermission('assets.create'), async (req,
         // Insert asset
         const [result] = await pool.query(
             `INSERT INTO assets 
-       (inventory_number, serial_number, type, model, manufacturer, status, container_id, qr_code, purchase_date, warranty_until, notes, is_reportable, is_lendable, is_network_integrated, mac_address) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (name, inventory_number, serial_number, type, model, manufacturer, status, container_id, qr_code, purchase_date, warranty_until, notes, is_reportable, is_lendable, is_network_integrated, mac_address) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
+                req.body.name || null,
                 inventory_number, 
                 serial_number || null, 
                 type, 
@@ -243,11 +244,12 @@ router.put('/:id', authMiddleware, requirePermission('assets.edit'), async (req,
         // Update asset
         await pool.query(
             `UPDATE assets 
-       SET inventory_number = ?, serial_number = ?, type = ?, model = ?, manufacturer = ?, 
+       SET name = ?, inventory_number = ?, serial_number = ?, type = ?, model = ?, manufacturer = ?, 
            status = ?, container_id = ?, purchase_date = ?, warranty_until = ?, notes = ?,
            is_reportable = ?, is_lendable = ?, is_network_integrated = ?, mac_address = ?
        WHERE id = ?`,
             [
+                req.body.name || null,
                 inventory_number, 
                 serial_number || null, 
                 type, 

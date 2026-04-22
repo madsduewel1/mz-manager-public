@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { containersAPI } from '../../services/api';
 
-const ContainerForm = ({ containerId, onSave, onCancel }) => {
+const ContainerForm = ({ containerId, onSave, onCancel, setSubmitting: setParentSubmitting }) => {
     const [formData, setFormData] = useState({
         name: '',
         type: 'wagen',
@@ -56,6 +56,7 @@ const ContainerForm = ({ containerId, onSave, onCancel }) => {
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
         setError(null);
+        if (setParentSubmitting) setParentSubmitting(true);
         try {
             if (containerId) {
                 await containersAPI.update(containerId, formData);
@@ -65,6 +66,8 @@ const ContainerForm = ({ containerId, onSave, onCancel }) => {
             if (onSave) onSave();
         } catch (err) {
             setError(err.response?.data?.error || 'Fehler beim Speichern');
+        } finally {
+            if (setParentSubmitting) setParentSubmitting(false);
         }
     };
 
@@ -78,9 +81,9 @@ const ContainerForm = ({ containerId, onSave, onCancel }) => {
                 </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Name *</label>
+                    <label className="form-label">Name *</label>
                     <input
                         type="text"
                         className="form-input"
@@ -91,7 +94,7 @@ const ContainerForm = ({ containerId, onSave, onCancel }) => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Typ</label>
+                    <label className="form-label">Typ</label>
                     <select
                         className="form-select"
                         value={formData.type}
@@ -106,7 +109,7 @@ const ContainerForm = ({ containerId, onSave, onCancel }) => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Raum / Standort (optional)</label>
+                    <label className="form-label">Raum / Standort (optional)</label>
                     <select
                         className="form-select"
                         value={formData.parent_container_id || ''}
@@ -120,7 +123,7 @@ const ContainerForm = ({ containerId, onSave, onCancel }) => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Zusätzliche Standort-Info (z.B. Schranknummer)</label>
+                    <label className="form-label">Zusätzliche Standort-Info (z.B. Schranknummer)</label>
                     <input
                         type="text"
                         className="form-input"
@@ -131,7 +134,7 @@ const ContainerForm = ({ containerId, onSave, onCancel }) => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Beschreibung</label>
+                    <label className="form-label">Beschreibung</label>
                     <textarea
                         className="form-input"
                         value={formData.description}

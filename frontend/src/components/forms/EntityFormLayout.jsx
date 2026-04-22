@@ -30,8 +30,8 @@ const EntityFormLayout = ({ title, subtitle, children, onCancel, onSave, submitt
                 </div>
             </div>
 
-            <div className="card shadow-sm" style={{ width: '100%', maxWidth: '900px' }}>
-                <div className="card-body">
+            <div className="card shadow-md" style={{ width: '100%', maxWidth: '800px', borderTop: '4px solid var(--color-text-primary)' }}>
+                <div className="card-body" style={{ padding: 'var(--space-xl)' }}>
                     {children}
                 </div>
                 <div className="card-footer" style={{ 
@@ -39,11 +39,12 @@ const EntityFormLayout = ({ title, subtitle, children, onCancel, onSave, submitt
                     justifyContent: 'flex-start', 
                     gap: 'var(--space-md)',
                     borderTop: '1px solid var(--color-border)',
-                    paddingTop: 'var(--space-lg)'
+                    padding: 'var(--space-lg) var(--space-xl)',
+                    background: 'var(--color-bg-light)'
                 }}>
                     <button 
-                        type="button"
-                        onClick={onSave} 
+                        type="submit"
+                        form="entity-form"
                         className="btn btn-primary"
                         disabled={submitting}
                     >
@@ -65,13 +66,6 @@ const EntityFormLayout = ({ title, subtitle, children, onCancel, onSave, submitt
                     background: var(--color-bg-medium);
                     border-radius: var(--radius-md);
                     border: 1px solid var(--color-border);
-                }
-                .card-body {
-                    padding: var(--space-lg);
-                }
-                .card-footer {
-                    padding: var(--space-md) var(--space-lg);
-                    background: var(--color-bg-light);
                 }
             `}</style>
         </div>

@@ -10,13 +10,6 @@ const AccessoryFormPage = () => {
     const { success } = useNotification();
     const [submitting, setSubmitting] = useState(false);
 
-    const handleSave = () => {
-        const form = document.getElementById('entity-form');
-        if (form) {
-            form.requestSubmit();
-        }
-    };
-
     const onSaveSuccess = () => {
         success(id ? 'Zubehör erfolgreich aktualisiert' : 'Zubehör erfolgreich erstellt');
         navigate('/accessories');
@@ -26,13 +19,13 @@ const AccessoryFormPage = () => {
         <EntityFormLayout
             title={id ? 'Zubehör bearbeiten' : 'Neues Zubehör hinzufügen'}
             subtitle={id ? `Bearbeiten von Zubehör #${id}` : 'Fügen Sie neues Zubehör zum Inventar hinzu'}
-            onSave={handleSave}
             submitting={submitting}
             saveLabel={id ? 'Änderungen speichern' : 'Zubehör speichern'}
         >
             <AccessoryForm 
                 accessoryId={id} 
                 onSave={onSaveSuccess} 
+                setSubmitting={setSubmitting}
                 onCancel={() => navigate('/accessories')}
             />
         </EntityFormLayout>

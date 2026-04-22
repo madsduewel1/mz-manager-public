@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { accessoriesAPI, assetsAPI } from '../../services/api';
 
-const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
+const AccessoryForm = ({ accessoryId, onSave, onCancel, setSubmitting: setParentSubmitting }) => {
     const [formData, setFormData] = useState({
         name: '',
         category: '',
@@ -61,6 +61,7 @@ const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
         setError(null);
+        if (setParentSubmitting) setParentSubmitting(true);
         try {
             if (accessoryId) {
                 await accessoriesAPI.updateAccessory(accessoryId, formData);
@@ -70,6 +71,8 @@ const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
             if (onSave) onSave();
         } catch (err) {
             setError(err.response?.data?.error || 'Fehler beim Speichern');
+        } finally {
+            if (setParentSubmitting) setParentSubmitting(false);
         }
     };
 
@@ -83,9 +86,9 @@ const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
                 </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Bezeichnung *</label>
+                    <label className="form-label">Bezeichnung *</label>
                     <input
                         type="text"
                         className="form-input"
@@ -95,9 +98,9 @@ const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
                     />
                 </div>
 
-                <div className="grid grid-2 grid-mobile-1" style={{ gap: '16px' }}>
+                <div className="grid grid-2 grid-mobile-1" style={{ gap: '20px' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 600 }}>Kategorie *</label>
+                        <label className="form-label">Kategorie *</label>
                         <input
                             type="text"
                             className="form-input"
@@ -113,7 +116,7 @@ const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 600 }}>Menge *</label>
+                        <label className="form-label">Menge *</label>
                         <input
                             type="number"
                             className="form-input"
@@ -125,9 +128,9 @@ const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
                     </div>
                 </div>
 
-                <div className="grid grid-2 grid-mobile-1" style={{ gap: '16px' }}>
+                <div className="grid grid-2 grid-mobile-1" style={{ gap: '20px' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 600 }}>Inventarnummer</label>
+                        <label className="form-label">Inventarnummer</label>
                         <input
                             type="text"
                             className="form-input"
@@ -137,7 +140,7 @@ const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
                         />
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 600 }}>Seriennummer</label>
+                        <label className="form-label">Seriennummer</label>
                         <input
                             type="text"
                             className="form-input"
@@ -148,9 +151,9 @@ const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
                     </div>
                 </div>
 
-                <div className="grid grid-2 grid-mobile-1" style={{ gap: '16px' }}>
+                <div className="grid grid-2 grid-mobile-1" style={{ gap: '20px' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 600 }}>Standort</label>
+                        <label className="form-label">Standort</label>
                         <input
                             type="text"
                             className="form-input"
@@ -160,7 +163,7 @@ const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontWeight: 600 }}>Zustand</label>
+                        <label className="form-label">Zustand</label>
                         <select
                             className="form-select"
                             value={formData.status}
@@ -175,7 +178,7 @@ const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Zugeordnetes Gerät (optional)</label>
+                    <label className="form-label">Zugeordnetes Gerät (optional)</label>
                     <select
                         className="form-select"
                         value={formData.assigned_device_id || ''}
@@ -191,7 +194,7 @@ const AccessoryForm = ({ accessoryId, onSave, onCancel }) => {
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontWeight: 600 }}>Notizen</label>
+                    <label className="form-label">Notizen</label>
                     <textarea
                         className="form-input"
                         rows="3"

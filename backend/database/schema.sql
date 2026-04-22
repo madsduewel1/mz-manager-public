@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS network_vlans (
 -- Assets Table (Laptops, iPads, Beamer, etc.)
 CREATE TABLE IF NOT EXISTS assets (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
     inventory_number VARCHAR(50) UNIQUE NOT NULL,
     serial_number VARCHAR(100),
     type ENUM('laptop', 'ipad', 'tablet', 'beamer', 'monitor', 'ladegeraet', 'adapter', 'maus', 'tastatur', 'sonstiges') NOT NULL,

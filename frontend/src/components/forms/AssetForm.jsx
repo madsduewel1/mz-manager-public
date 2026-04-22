@@ -3,8 +3,9 @@ import axios from 'axios';
 import { assetsAPI, containersAPI } from '../../services/api';
 import { FiAlertCircle } from 'react-icons/fi';
 
-const AssetForm = ({ assetId, onSave, onCancel }) => {
+const AssetForm = ({ assetId, onSave, onCancel, setSubmitting: setParentSubmitting }) => {
     const [formData, setFormData] = useState({
+        name: '',
         inventory_number: '',
         serial_number: '',
         type: 'laptop',
@@ -36,6 +37,7 @@ const AssetForm = ({ assetId, onSave, onCancel }) => {
             const response = await assetsAPI.getOne(id);
             const asset = response.data;
             setFormData({
+                name: asset.name || '',
                 inventory_number: asset.inventory_number || '',
                 serial_number: asset.serial_number || '',
                 type: asset.type || 'laptop',
@@ -97,6 +99,7 @@ const AssetForm = ({ assetId, onSave, onCancel }) => {
             return;
         }
         setSubmitting(true);
+        if (setParentSubmitting) setParentSubmitting(true);
         setError(null);
         try {
             if (assetId) {
@@ -109,6 +112,7 @@ const AssetForm = ({ assetId, onSave, onCancel }) => {
             setError(err.response?.data?.error || 'Fehler beim Speichern');
         } finally {
             setSubmitting(false);
+            if (setParentSubmitting) setParentSubmitting(false);
         }
     };
 
@@ -120,10 +124,9 @@ const AssetForm = ({ assetId, onSave, onCancel }) => {
             display: 'flex',
             flexDirection: 'column',
             gap: '6px',
-            padding: '12px 0',
-            borderBottom: '1px solid var(--color-border)'
+            padding: '12px 0'
         }}>
-            <label style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+            <label style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text-primary)' }}>
                 {label}{required && <span style={{ color: 'var(--color-error)', marginLeft: 4 }}>*</span>}
             </label>
             <div style={{ width: '100%' }}>{children}</div>
@@ -155,11 +158,11 @@ const AssetForm = ({ assetId, onSave, onCancel }) => {
             fontSize: '0.75rem',
             fontWeight: 700,
             textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            color: 'var(--color-primary)',
-            padding: '24px 0 8px',
-            borderBottom: '2px solid var(--color-primary)',
-            marginBottom: '8px'
+            letterSpacing: '0.08em',
+            color: 'var(--color-text-secondary)',
+            padding: '32px 0 8px',
+            borderBottom: '1px solid var(--color-border)',
+            marginBottom: '16px'
         }}>
             {children}
         </div>
@@ -176,6 +179,16 @@ const AssetForm = ({ assetId, onSave, onCancel }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
 
                 <SectionTitle>Basisdaten</SectionTitle>
+
+                <Row label="Bezeichnung / Name">
+                    <input
+                        type="text"
+                        className="form-input"
+                        value={formData.name}
+                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="z.B. Klassen-iPad 01, Lehrer-Laptop..."
+                    />
+                </Row>
 
                 <Row label="Inventarnummer" required>
                     <input
