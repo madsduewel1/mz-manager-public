@@ -130,16 +130,30 @@ const HelpAdmin = () => {
                         </div>
                         <div className="form-group">
                             <label className="form-label" style={{ fontWeight: 600, fontSize: '1rem' }}>Benötigte Berechtigung</label>
-                            <input 
-                                type="text" 
+                            <select 
                                 className="form-control" 
                                 name="permission_required" 
                                 value={formData.permission_required} 
                                 onChange={handleChange} 
-                                placeholder="z.B. all, assets.view"
-                                style={{ padding: '0.75rem', fontSize: '1rem' }}
+                                style={{ padding: '0.75rem', fontSize: '1rem', appearance: 'auto' }}
                                 required 
-                            />
+                            >
+                                <option value="all">Administrator (all)</option>
+                                <option value="assets.view">Geräte ansehen (assets.view)</option>
+                                <option value="assets.manage">Geräte verwalten (assets.manage)</option>
+                                <option value="containers.view">Container ansehen (containers.view)</option>
+                                <option value="containers.manage">Container verwalten (containers.manage)</option>
+                                <option value="lendings.view">Ausleihen ansehen (lendings.view)</option>
+                                <option value="lendings.manage">Ausleihen verwalten (lendings.manage)</option>
+                                <option value="errors.view">Fehler ansehen (errors.view)</option>
+                                <option value="errors.manage">Fehler verwalten (errors.manage)</option>
+                                <option value="network.view">Netzwerk ansehen (network.view)</option>
+                                <option value="network.manage">Netzwerk verwalten (network.manage)</option>
+                                <option value="accessories.view">Zubehör ansehen (accessories.view)</option>
+                                <option value="accessories.manage">Zubehör verwalten (accessories.manage)</option>
+                                <option value="users.view">Benutzerverwaltung (users.view)</option>
+                                <option value="roles.view">Rollenverwaltung (roles.view)</option>
+                            </select>
                             <small className="text-muted" style={{ marginTop: '0.5rem', display: 'block' }}>Welches Recht braucht der Nutzer, um dies zu sehen?</small>
                         </div>
                     </div>
