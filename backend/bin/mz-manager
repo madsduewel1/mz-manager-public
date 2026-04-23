@@ -1,0 +1,82 @@
+#!/usr/bin/env node
+const { pool } = require('../config/database');
+const bcrypt = require('bcrypt');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
+async function resetPassword(username) {
+    const newPassword = Math.random().toString(36).slice(-8);
+    const hash = await bcrypt.hash(newPassword, 10);
+    
+    const [result] = await pool.query(
+        'UPDATE users SET password_hash = ?, requires_password_change = 1 WHERE username = ?',
+        [hash, username]
+    );
+    
+    if (result.affectedRows > 0) {
+        console.log(`✅ Passwort für ${username} zurückgesetzt.`);
+        console.log(`🔑 Neues Passwort: ${newPassword}`);
+        console.log(`⚠️  Der Benutzer muss das Passwort beim nächsten Login ändern.`);
+    } else {
+        console.log(`❌ Benutzer ${username} nicht gefunden.`);
+    }
+}
+
+async function systemInfo() {
+    try {
+        const [users] = await pool.query('SELECT COUNT(*) as count FROM users');
+        const [assets] = await pool.query('SELECT COUNT(*) as count FROM assets');
+        const [settings] = await pool.query('SELECT setting_value FROM settings WHERE setting_key = "org_name"');
+        
+        console.log('--- MZ-Manager System Info ---');
+        console.log(`Organisation: ${settings[0]?.setting_value || 'Nicht gesetzt'}`);
+        console.log(`Benutzer:     ${users[0].count}`);
+        console.log(`Geräte:       ${assets[0].count}`);
+        console.log('------------------------------');
+    } catch (err) {
+        console.log('❌ Fehler beim Abrufen der System-Infos:', err.message);
+    }
+}
+
+function showHelp() {
+    console.log('MZ-Manager CLI Tool');
+    console.log('\nUsage:');
+    console.log('  mz-manager <command> [arguments]');
+    console.log('\nCommands:');
+    console.log('  password reset <username>   Setzt das Passwort eines Benutzers zurück');
+    console.log('  system info                 Zeigt Systeminformationen an');
+    console.log('  --help                      Zeigt diese Hilfe an');
+}
+
+async function main() {
+    const args = process.argv.slice(2);
+    
+    if (args.length === 0 || args.includes('--help')) {
+        showHelp();
+        process.exit(0);
+    }
+    
+    const cmd = args[0];
+    
+    try {
+        if (cmd === 'password' && args[1] === 'reset') {
+            const username = args[2];
+            if (!username) {
+                console.log('❌ Benutzername fehlt. Usage: mz-manager password reset <username>');
+                process.exit(1);
+            }
+            await resetPassword(username);
+        } else if (cmd === 'system' && args[1] === 'info') {
+            await systemInfo();
+        } else {
+            console.log(`❌ Unbekannter Befehl: ${args.join(' ')}`);
+            showHelp();
+        }
+    } catch (err) {
+        console.error('An error occurred:', err);
+    } finally {
+        await pool.end();
+    }
+}
+
+main();

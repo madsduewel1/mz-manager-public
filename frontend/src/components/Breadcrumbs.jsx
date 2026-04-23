@@ -1,0 +1,68 @@
+import { Link, useLocation } from 'react-router-dom';
+import { FiChevronRight, FiHome } from 'react-icons/fi';
+import HelpButton from './Help/HelpButton';
+
+const Breadcrumbs = () => {
+    const location = useLocation();
+    const pathnames = location.pathname.split('/').filter((x) => x);
+
+    // Map routes to professional labels
+    const routeLabels = {
+        'dashboard': 'Dashboard',
+        'assets': 'Geräte',
+        'containers': 'Container',
+        'lendings': 'Ausleihen',
+        'error-reports': 'Fehlermeldungen',
+        'admin': 'Verwaltung',
+        'users': 'Benutzer',
+        'roles': 'Rollen',
+        'permissions': 'Rechte',
+        'rooms': 'Räume',
+        'models': 'Gerätemodelle',
+        'qr-codes': 'QR-Codes',
+        'logs': 'System-Logs',
+        'settings': 'Einstellungen',
+        'network': 'Netzwerk',
+        'vlans': 'VLANs',
+        'accessories': 'Zubehör',
+        'new': 'Erstellen',
+        'edit': 'Bearbeiten',
+        'assign': 'Zuweisen',
+        'report': 'Fehler melden'
+    };
+
+    if (pathnames.length === 0) return null;
+
+    const moduleContext = pathnames[0] || 'dashboard';
+
+    return (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '1rem' }}>
+            <nav className="breadcrumbs" aria-label="Breadcrumb">
+                <Link to="/dashboard" className="breadcrumb-item">
+                    <FiHome size={14} />
+                </Link>
+                {pathnames.map((value, index) => {
+                    const last = index === pathnames.length - 1;
+                    const to = `/${pathnames.slice(0, index + 1).join('/')}`;
+                    const label = routeLabels[value] || value;
+
+                    return (
+                        <div key={to} className="breadcrumb-group">
+                            <FiChevronRight className="breadcrumb-separator" size={14} />
+                            {last ? (
+                                <span className="breadcrumb-current">{label}</span>
+                            ) : (
+                                <Link to={to} className="breadcrumb-item">
+                                    {label}
+                                </Link>
+                            )}
+                        </div>
+                    );
+                })}
+            </nav>
+            <HelpButton moduleContext={moduleContext} />
+        </div>
+    );
+};
+
+export default Breadcrumbs;

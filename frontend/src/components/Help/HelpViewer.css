@@ -1,0 +1,205 @@
+.help-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: flex-end;
+    align-items: stretch;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.help-modal-content {
+    background: var(--bg-primary, #ffffff);
+    width: 100%;
+    max-width: 500px;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    animation: slideInRight 0.3s ease-out;
+}
+
+[data-theme='dark'] .help-modal-content {
+    background: var(--bg-primary, #1e1e1e);
+    color: var(--text-primary, #e0e0e0);
+}
+
+.help-modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+[data-theme='dark'] .help-modal-header {
+    border-bottom-color: var(--border-color, #333);
+}
+
+.help-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--primary-color, #3b82f6);
+}
+
+.help-modal-title h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary, #1a202c);
+    text-transform: capitalize;
+}
+
+[data-theme='dark'] .help-modal-title h2 {
+    color: var(--text-primary, #e0e0e0);
+}
+
+.help-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary, #718096);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.help-modal-close:hover {
+    background: var(--bg-secondary, #f7fafc);
+    color: var(--text-primary, #1a202c);
+}
+
+[data-theme='dark'] .help-modal-close:hover {
+    background: var(--bg-secondary, #2d3748);
+    color: var(--text-primary, #e0e0e0);
+}
+
+.help-modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.help-module-section {
+    margin-bottom: 2rem;
+}
+
+.help-module-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-secondary, #4a5568);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    padding-bottom: 0.5rem;
+}
+
+[data-theme='dark'] .help-module-title {
+    color: var(--text-secondary, #a0aec0);
+    border-bottom-color: var(--border-color, #333);
+}
+
+.help-entries-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.help-entry-card {
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+[data-theme='dark'] .help-entry-card {
+    border-color: var(--border-color, #333);
+    background: var(--bg-secondary, #252525);
+}
+
+.help-entry-header {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background: var(--bg-secondary, #f7fafc);
+    user-select: none;
+    transition: background 0.2s;
+}
+
+[data-theme='dark'] .help-entry-header {
+    background: var(--bg-tertiary, #2a2a2a);
+}
+
+.help-entry-header:hover {
+    background: var(--bg-tertiary, #edf2f7);
+}
+
+[data-theme='dark'] .help-entry-header:hover {
+    background: var(--bg-hover, #333);
+}
+
+.help-entry-header h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.help-entry-content {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color, #e2e8f0);
+    line-height: 1.6;
+    color: var(--text-secondary, #4a5568);
+}
+
+[data-theme='dark'] .help-entry-content {
+    border-top-color: var(--border-color, #333);
+    color: var(--text-secondary, #cbd5e0);
+}
+
+.help-entry-content p {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.help-entry-content p:last-child {
+    margin-bottom: 0;
+}
+
+.help-entry-content ul, .help-entry-content ol {
+    margin-top: 0;
+    padding-left: 1.5rem;
+}
+
+.help-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.help-loading, .help-empty {
+    text-align: center;
+    color: var(--text-secondary, #718096);
+    padding: 2rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
