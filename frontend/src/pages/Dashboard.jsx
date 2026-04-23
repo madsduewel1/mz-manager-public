@@ -98,7 +98,7 @@ function Dashboard() {
                     icon={FiAlertCircle}
                     permission="errors.view"
                 >
-                    <RecentErrorsWidget errors={stats?.recentErrors} />
+                    <RecentErrorsWidget errors={stats?.recent_errors} />
                 </DashboardWidget>
 
                 <DashboardWidget 
@@ -107,7 +107,7 @@ function Dashboard() {
                     icon={FiClock}
                     permission="lendings.view"
                 >
-                    <UpcomingReturnsWidget returns={stats?.upcomingReturns} />
+                    <UpcomingReturnsWidget returns={stats?.upcoming_returns} />
                 </DashboardWidget>
 
                 {/* Row 3: Activity Feed */}

@@ -1,10 +1,10 @@
 import React from 'react';
 
 const DeviceStatusWidget = ({ stats }) => {
-    const total = stats.total_assets || 0;
-    const defective = stats.defective_assets || 0;
-    const inRepair = stats.repair_assets || 0;
-    const active = stats.active_lendings || 0;
+    const total = stats?.statistics?.total_assets || 0;
+    const defective = stats?.statistics?.defective_assets || 0;
+    const inRepair = stats?.statistics?.repair_assets || 0;
+    const active = stats?.statistics?.active_lendings || 0;
     const available = total - defective - inRepair - active;
 
     const data = [

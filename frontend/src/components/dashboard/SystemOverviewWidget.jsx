@@ -3,9 +3,9 @@ import { FiPackage, FiMapPin, FiUsers, FiAlertCircle } from 'react-icons/fi';
 
 const SystemOverviewWidget = ({ stats }) => {
     const items = [
-        { label: 'Geräte', value: stats.total_assets, icon: FiPackage, color: 'var(--color-primary)' },
-        { label: 'Räume/Container', value: stats.total_containers, icon: FiMapPin, color: 'var(--color-info)' },
-        { label: 'Offene Tickets', value: stats.open_error_reports, icon: FiAlertCircle, color: 'var(--color-error)' },
+        { label: 'Geräte', value: stats?.statistics?.total_assets || 0, icon: FiPackage, color: 'var(--color-primary)' },
+        { label: 'Räume/Container', value: stats?.statistics?.total_containers || 0, icon: FiMapPin, color: 'var(--color-info)' },
+        { label: 'Offene Tickets', value: stats?.statistics?.open_error_reports || 0, icon: FiAlertCircle, color: 'var(--color-error)' },
     ];
 
     return (

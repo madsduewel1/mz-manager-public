@@ -29,14 +29,24 @@ function AssetDetail() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [assetRes, qrRes, historyRes] = await Promise.all([
+            // Core data fetch
+            const [assetRes, qrRes] = await Promise.all([
                 assetsAPI.getOne(id),
-                assetsAPI.getQR(id),
-                assetsAPI.getHistory(id)
+                assetsAPI.getQR(id)
             ]);
             setAsset(assetRes.data);
             setQrCode(qrRes.data.qr_code);
-            setHistory(historyRes.data);
+
+            // Conditional history fetch based on permissions
+            if (hasPermission('assets.history')) {
+                try {
+                    const historyRes = await assetsAPI.getHistory(id);
+                    setHistory(historyRes.data);
+                } catch (historyErr) {
+                    console.error('Error loading history:', historyErr);
+                    // Don't fail the whole page if just history fails
+                }
+            }
         } catch (err) {
             console.error('Error loading asset data:', err);
             notifyError('Fehler beim Laden der Gerätedaten');
