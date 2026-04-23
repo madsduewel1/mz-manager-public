@@ -290,6 +290,7 @@ a:hover {
   gap: var(--space-md);
 }
 
+<<<<<<< HEAD
 /* 12-Column Widget Grid */
 .widget-grid {
   display: grid;
@@ -321,6 +322,8 @@ a:hover {
 
 .h-full { height: 100%; }
 
+=======
+>>>>>>> 088952ba2272932c7dd01f7235986c1dc098db1e
 .grid-2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -633,11 +636,14 @@ a:hover {
   color: var(--status-ok);
 }
 
+<<<<<<< HEAD
 .badge-error {
   background: hsla(0, 84%, 60%, 0.15);
   color: var(--status-defekt);
 }
 
+=======
+>>>>>>> 088952ba2272932c7dd01f7235986c1dc098db1e
 /* ===================================
    Tables
    =================================== */
@@ -776,6 +782,7 @@ a:hover {
   gap: var(--space-lg);
 }
 
+<<<<<<< HEAD
 .gap-xl {
   gap: var(--space-xl);
 }
@@ -804,6 +811,8 @@ a:hover {
   animation: fadeIn var(--transition-base) ease-out;
 }
 
+=======
+>>>>>>> 088952ba2272932c7dd01f7235986c1dc098db1e
 /* Grid Mobile Utilities */
 @media (max-width: 768px) {
   .grid-mobile-1 {
